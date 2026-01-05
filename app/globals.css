@@ -1,0 +1,96 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --redbull-red: #DC143C;
+  --redbull-dark-red: #B8122E;
+  --redbull-blue: #003F7F;
+  --redbull-dark-blue: #002952;
+  --redbull-yellow: #FFD700;
+  --instagram-bg: #FAFAFA;
+  --instagram-border: #DBDBDB;
+  --instagram-card: #FFFFFF;
+  --instagram-text: #262626;
+  --instagram-text-secondary: #8E8E8E;
+}
+
+body {
+  color: var(--instagram-text);
+  background: var(--instagram-bg);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  min-height: 100vh;
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+  
+  /* Instagram-style card */
+  .instagram-card {
+    background: var(--instagram-card);
+    border: 1px solid var(--instagram-border);
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+    transition: box-shadow 0.3s ease;
+  }
+  
+  .instagram-card:hover {
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.16), 0 3px 6px rgba(0, 0, 0, 0.23);
+  }
+  
+  /* Red Bull accent styles */
+  .redbull-gradient {
+    background: linear-gradient(135deg, var(--redbull-red) 0%, var(--redbull-dark-red) 100%);
+  }
+  
+  .redbull-text {
+    color: var(--redbull-red);
+  }
+  
+  .redbull-bg {
+    background-color: var(--redbull-red);
+  }
+  
+  .redbull-hover:hover {
+    background-color: var(--redbull-dark-red);
+  }
+  
+  /* Clean navigation */
+  .nav-clean {
+    background: var(--instagram-card);
+    border-bottom: 1px solid var(--instagram-border);
+    box-shadow: 0 1px 0 rgba(0, 0, 0, 0.08);
+  }
+  
+  /* Button styles */
+  .btn-primary {
+    background: var(--redbull-red);
+    color: white;
+    border-radius: 8px;
+    padding: 8px 16px;
+    font-weight: 600;
+    transition: background-color 0.2s ease;
+  }
+  
+  .btn-primary:hover {
+    background: var(--redbull-dark-red);
+  }
+  
+  .btn-secondary {
+    background: var(--instagram-card);
+    color: var(--instagram-text);
+    border: 1px solid var(--instagram-border);
+    border-radius: 8px;
+    padding: 8px 16px;
+    font-weight: 600;
+    transition: background-color 0.2s ease;
+  }
+  
+  .btn-secondary:hover {
+    background: var(--instagram-bg);
+  }
+}
