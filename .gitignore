@@ -40,3 +40,6 @@ next-env.d.ts
 /prisma/*.db-journal
 # Note: PostgreSQL database is used, so no local DB files
 
+# frontend (separate React app, not part of Next.js build)
+/frontend
+
