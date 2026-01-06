@@ -49,6 +49,7 @@ export default function AdminDashboard() {
   const [contestants, setContestants] = useState<Record<string, Contestant[]>>({});
   const [showContestantForm, setShowContestantForm] = useState<Record<string, boolean>>({});
   const [newContestant, setNewContestant] = useState<Record<string, { name: string; surname: string; picture: string }>>({});
+  const [editingContestant, setEditingContestant] = useState<Record<string, string | null>>({}); // categoryId -> contestantId
   const [uploadingImage, setUploadingImage] = useState<Record<string, boolean>>({});
   const [contestantImagePreview, setContestantImagePreview] = useState<Record<string, string>>({});
   const [events, setEvents] = useState<Event[]>([]);
@@ -132,9 +133,15 @@ export default function AdminDashboard() {
       return;
     }
 
+    const isEditing = editingContestant[categoryId];
+    const url = isEditing 
+      ? `/api/contestants/${isEditing}` 
+      : `/api/categories/${categoryId}/contestants`;
+    const method = isEditing ? "PATCH" : "POST";
+
     try {
-      const response = await fetch(`/api/categories/${categoryId}/contestants`, {
-        method: "POST",
+      const response = await fetch(url, {
+        method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: contestant.name,
@@ -147,14 +154,36 @@ export default function AdminDashboard() {
         setNewContestant(prev => ({ ...prev, [categoryId]: { name: "", surname: "", picture: "" } }));
         setContestantImagePreview(prev => ({ ...prev, [categoryId]: "" }));
         setShowContestantForm(prev => ({ ...prev, [categoryId]: false }));
+        setEditingContestant(prev => ({ ...prev, [categoryId]: null }));
         fetchContestants(categoryId);
       } else {
-        alert("Failed to add contestant");
+        alert(isEditing ? "Failed to update contestant" : "Failed to add contestant");
       }
     } catch (error) {
-      console.error("Error adding contestant:", error);
-      alert("Failed to add contestant");
+      console.error("Error saving contestant:", error);
+      alert(isEditing ? "Failed to update contestant" : "Failed to add contestant");
     }
+  };
+
+  const handleEditContestant = (contestant: Contestant) => {
+    setEditingContestant(prev => ({ ...prev, [contestant.categoryId]: contestant.id }));
+    setNewContestant(prev => ({ 
+      ...prev, 
+      [contestant.categoryId]: { 
+        name: contestant.name, 
+        surname: contestant.surname, 
+        picture: contestant.picture || "" 
+      } 
+    }));
+    setContestantImagePreview(prev => ({ ...prev, [contestant.categoryId]: contestant.picture || "" }));
+    setShowContestantForm(prev => ({ ...prev, [contestant.categoryId]: true }));
+  };
+
+  const handleCancelContestantEdit = (categoryId: string) => {
+    setNewContestant(prev => ({ ...prev, [categoryId]: { name: "", surname: "", picture: "" } }));
+    setContestantImagePreview(prev => ({ ...prev, [categoryId]: "" }));
+    setShowContestantForm(prev => ({ ...prev, [categoryId]: false }));
+    setEditingContestant(prev => ({ ...prev, [categoryId]: null }));
   };
 
   const handleDeleteContestant = async (contestantId: string, categoryId: string) => {
@@ -697,7 +726,15 @@ export default function AdminDashboard() {
                               type="submit"
                               className="mt-3 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors flex items-center gap-2 text-sm"
                             >
-                              <FaPlus /> Add Contestant
+                              {editingContestant[category.id] ? (
+                                <>
+                                  <FaEdit /> Update Contestant
+                                </>
+                              ) : (
+                                <>
+                                  <FaPlus /> Add Contestant
+                                </>
+                              )}
                             </button>
                           </form>
                         )}
@@ -726,12 +763,20 @@ export default function AdminDashboard() {
                                   <h5 className="font-semibold text-gray-800 truncate">
                                     {contestant.name} {contestant.surname}
                                   </h5>
-                                  <button
-                                    onClick={() => handleDeleteContestant(contestant.id, category.id)}
-                                    className="mt-2 text-red-600 hover:text-red-800 text-sm flex items-center gap-1"
-                                  >
-                                    <FaTrash className="text-xs" /> Delete
-                                  </button>
+                                  <div className="flex gap-2 mt-2">
+                                    <button
+                                      onClick={() => handleEditContestant(contestant)}
+                                      className="text-blue-600 hover:text-blue-800 text-sm flex items-center gap-1"
+                                    >
+                                      <FaEdit className="text-xs" /> Edit
+                                    </button>
+                                    <button
+                                      onClick={() => handleDeleteContestant(contestant.id, category.id)}
+                                      className="text-red-600 hover:text-red-800 text-sm flex items-center gap-1"
+                                    >
+                                      <FaTrash className="text-xs" /> Delete
+                                    </button>
+                                  </div>
                                 </div>
                               </div>
                             ))}
