@@ -60,6 +60,7 @@ export default function Chatroom() {
   const [showUsernameEdit, setShowUsernameEdit] = useState(false);
   const [newUsername, setNewUsername] = useState("");
   const [editingUsername, setEditingUsername] = useState(false);
+  const [chatroomActive, setChatroomActive] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
@@ -72,17 +73,29 @@ export default function Chatroom() {
     const userObj = JSON.parse(userData);
     setUser(userObj);
     setNewUsername(userObj.username || "");
+    fetchChatroomStatus();
     fetchMessages();
     fetchQuestions();
     setLoading(false);
 
     const interval = setInterval(() => {
+      fetchChatroomStatus();
       fetchMessages();
       fetchQuestions();
     }, 3000);
 
     return () => clearInterval(interval);
   }, [router]);
+
+  const fetchChatroomStatus = async () => {
+    try {
+      const response = await fetch("/api/chatroom/status");
+      const data = await response.json();
+      setChatroomActive(data.isActive);
+    } catch (error) {
+      console.error("Error fetching chatroom status:", error);
+    }
+  };
 
   useEffect(() => {
     // Only auto-scroll if user hasn't manually scrolled up
@@ -266,6 +279,14 @@ export default function Chatroom() {
             <FaComments className="text-3xl sm:text-4xl text-[#DC143C]" />
             <h1 className="text-3xl sm:text-4xl font-bold text-gray-900">Chatroom</h1>
           </div>
+          <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm font-semibold ${
+            chatroomActive 
+              ? "bg-green-100 text-green-800" 
+              : "bg-red-100 text-red-800"
+          }`}>
+            <div className={`w-2 h-2 rounded-full ${chatroomActive ? "bg-green-600" : "bg-red-600"}`}></div>
+            {chatroomActive ? "Active" : "Offline"}
+          </div>
           
           {/* Username Settings */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
@@ -387,17 +408,24 @@ export default function Chatroom() {
               <div ref={messagesEndRef} />
             </div>
 
+            {!chatroomActive && (
+              <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-red-700 text-sm">⚠️ Chatroom is currently offline. You can view messages but cannot send new ones.</p>
+              </div>
+            )}
             <form onSubmit={handleSendMessage} className="flex gap-2">
               <input
                 type="text"
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
-                placeholder="Type your message..."
-                className="flex-1 px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#DC143C] focus:border-[#DC143C]"
+                placeholder={chatroomActive ? "Type your message..." : "Chatroom is offline"}
+                disabled={!chatroomActive}
+                className="flex-1 px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#DC143C] focus:border-[#DC143C] disabled:opacity-50 disabled:cursor-not-allowed"
               />
               <button
                 type="submit"
-                className="bg-[#DC143C] text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg font-semibold hover:bg-[#B8122E] transition-colors flex items-center gap-2 text-sm sm:text-base"
+                disabled={!chatroomActive}
+                className="bg-[#DC143C] text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg font-semibold hover:bg-[#B8122E] transition-colors flex items-center gap-2 text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <FaPaperPlane className="text-sm" /> <span className="hidden sm:inline">Send</span>
               </button>
@@ -412,17 +440,23 @@ export default function Chatroom() {
               onSubmit={handleSubmitQuestion}
               className="mb-4 sm:mb-6 p-4 sm:p-6 instagram-card"
             >
-              <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-                <FaQuestionCircle className="text-[#DC143C]" /> Ask a Question
-              </h2>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg sm:text-xl font-bold text-gray-900 flex items-center gap-2">
+                  <FaQuestionCircle className="text-[#DC143C]" /> Ask a Question
+                </h2>
+                {!chatroomActive && (
+                  <span className="text-xs text-red-600 font-semibold">(Offline)</span>
+                )}
+              </div>
               <div className="space-y-4">
                 <input
                   type="text"
                   value={newQuestionTitle}
                   onChange={(e) => setNewQuestionTitle(e.target.value)}
-                  placeholder="Question title..."
+                  placeholder={chatroomActive ? "Question title..." : "Chatroom is offline"}
                   required
-                  className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#DC143C] focus:border-[#DC143C]"
+                  disabled={!chatroomActive}
+                  className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#DC143C] focus:border-[#DC143C] disabled:opacity-50 disabled:cursor-not-allowed"
                 />
                 <textarea
                   value={newQuestionContent}
@@ -454,7 +488,8 @@ export default function Chatroom() {
                 </div>
                 <button
                   type="submit"
-                  className="bg-[#DC143C] text-white px-6 py-2 rounded-lg font-semibold hover:bg-[#B8122E] transition-colors flex items-center gap-2"
+                  disabled={!chatroomActive}
+                  className="bg-[#DC143C] text-white px-6 py-2 rounded-lg font-semibold hover:bg-[#B8122E] transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <FaPaperPlane /> Submit Question
                 </button>

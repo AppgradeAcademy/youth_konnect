@@ -67,3 +67,4 @@ export default function ImageModal({ imageUrl, alt, isOpen, onClose }: ImageModa
   );
 }
 
+

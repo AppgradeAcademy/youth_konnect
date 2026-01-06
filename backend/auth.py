@@ -26,3 +26,5 @@ def create_user(db: Session, user: UserCreate, role: str = "user"):
     return db_user
 
 
+
+

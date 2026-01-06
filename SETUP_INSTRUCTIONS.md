@@ -52,3 +52,5 @@ The React frontend still needs to be created. Would you like me to:
 ✅ Next.js frontend still works (can use for now)
 
 
+
+

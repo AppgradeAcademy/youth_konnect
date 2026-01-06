@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { FaLock, FaUser, FaSignInAlt, FaVoteYea, FaPlus, FaTrash, FaChartBar, FaImage, FaEdit, FaUserCircle, FaCalendarAlt, FaMapMarkerAlt, FaClock, FaTimes, FaPoll } from "react-icons/fa";
+import { FaLock, FaUser, FaSignInAlt, FaVoteYea, FaPlus, FaTrash, FaChartBar, FaImage, FaEdit, FaUserCircle, FaCalendarAlt, FaMapMarkerAlt, FaClock, FaTimes, FaPoll, FaUsers, FaComments, FaPowerOff, FaQuestionCircle } from "react-icons/fa";
 import ImageModal from "@/components/ImageModal";
 import Image from "next/image";
 
@@ -61,8 +61,12 @@ export default function AdminDashboard() {
   const [newEventDate, setNewEventDate] = useState("");
   const [newEventTime, setNewEventTime] = useState("");
   const [newEventPlace, setNewEventPlace] = useState("");
-  const [activeSection, setActiveSection] = useState<"categories" | "events" | "results">("categories");
+  const [activeSection, setActiveSection] = useState<"categories" | "events" | "results" | "participants" | "chatroom">("categories");
   const [selectedImage, setSelectedImage] = useState<{ url: string; alt: string } | null>(null);
+  const [users, setUsers] = useState<any[]>([]);
+  const [chatroomMessages, setChatroomMessages] = useState<any[]>([]);
+  const [chatroomQuestions, setChatroomQuestions] = useState<any[]>([]);
+  const [chatroomStatus, setChatroomStatus] = useState(true);
   const router = useRouter();
 
   // Admin credentials
@@ -75,8 +79,20 @@ export default function AdminDashboard() {
       setIsAuthenticated(true);
       fetchCategories();
       fetchEvents();
+      fetchChatroomStatus();
     }
   }, []);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      if (activeSection === "participants") {
+        fetchUsers();
+      } else if (activeSection === "chatroom") {
+        fetchChatroomData();
+        fetchChatroomStatus();
+      }
+    }
+  }, [activeSection, isAuthenticated]);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -367,6 +383,99 @@ export default function AdminDashboard() {
     setNewEventDate("");
     setNewEventTime("");
     setNewEventPlace("");
+  };
+
+  const fetchUsers = async () => {
+    try {
+      const response = await fetch("/api/users");
+      const data = await response.json();
+      setUsers(data);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+    }
+  };
+
+  const fetchChatroomData = async () => {
+    try {
+      const [messagesRes, questionsRes] = await Promise.all([
+        fetch("/api/messages"),
+        fetch("/api/questions"),
+      ]);
+      const messages = await messagesRes.json();
+      const questions = await questionsRes.json();
+      setChatroomMessages(messages);
+      setChatroomQuestions(questions);
+    } catch (error) {
+      console.error("Error fetching chatroom data:", error);
+    }
+  };
+
+  const fetchChatroomStatus = async () => {
+    try {
+      const response = await fetch("/api/chatroom/status");
+      const data = await response.json();
+      setChatroomStatus(data.isActive);
+    } catch (error) {
+      console.error("Error fetching chatroom status:", error);
+    }
+  };
+
+  const handleToggleChatroom = async () => {
+    try {
+      const response = await fetch("/api/chatroom/status", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isActive: !chatroomStatus }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setChatroomStatus(data.isActive);
+      } else {
+        alert("Failed to update chatroom status");
+      }
+    } catch (error) {
+      console.error("Error updating chatroom status:", error);
+      alert("Failed to update chatroom status");
+    }
+  };
+
+  const handleDeleteMessage = async (messageId: string) => {
+    if (!confirm("Are you sure you want to delete this message?")) return;
+
+    try {
+      const response = await fetch(`/api/messages/${messageId}`, {
+        method: "DELETE",
+      });
+
+      if (response.ok) {
+        fetchChatroomData();
+      } else {
+        alert("Failed to delete message");
+      }
+    } catch (error) {
+      console.error("Error deleting message:", error);
+      alert("Failed to delete message");
+    }
+  };
+
+  const handleDeleteQuestion = async (questionId: string) => {
+    if (!confirm("Are you sure you want to delete this question?")) return;
+
+    try {
+      const response = await fetch(`/api/questions/${questionId}`, {
+        method: "DELETE",
+      });
+
+      if (response.ok) {
+        fetchChatroomData();
+      } else {
+        alert("Failed to delete question");
+      }
+    } catch (error) {
+      console.error("Error deleting question:", error);
+      alert("Failed to delete question");
+    }
   };
 
   if (!isAuthenticated) {
@@ -1099,6 +1208,178 @@ export default function AdminDashboard() {
                 })}
               </div>
             )}
+          </div>
+        )}
+
+        {/* Participants Section */}
+        {activeSection === "participants" && (
+          <div className="space-y-4">
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+              <FaUsers /> Registered Users ({users.length})
+            </h2>
+            
+            {users.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <FaUsers className="text-5xl mx-auto mb-4 opacity-50" />
+                <p>No users registered yet.</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full glass-card rounded-lg overflow-hidden">
+                  <thead className="bg-indigo-100">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Name</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Email</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Username</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Role</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Votes</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Messages</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Questions</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Joined</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {users.map((user) => (
+                      <tr key={user.id} className="hover:bg-gray-50">
+                        <td className="px-4 py-3 text-sm text-gray-800">{user.name}</td>
+                        <td className="px-4 py-3 text-sm text-gray-600">{user.email}</td>
+                        <td className="px-4 py-3 text-sm text-gray-600">{user.username || "-"}</td>
+                        <td className="px-4 py-3">
+                          <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                            user.role === "admin" 
+                              ? "bg-purple-100 text-purple-800" 
+                              : "bg-gray-100 text-gray-800"
+                          }`}>
+                            {user.role}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-600">{user._count?.votes || 0}</td>
+                        <td className="px-4 py-3 text-sm text-gray-600">{user._count?.messages || 0}</td>
+                        <td className="px-4 py-3 text-sm text-gray-600">{user._count?.questions || 0}</td>
+                        <td className="px-4 py-3 text-sm text-gray-600">
+                          {new Date(user.createdAt).toLocaleDateString()}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Chatroom Management Section */}
+        {activeSection === "chatroom" && (
+          <div className="space-y-6">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-800 flex items-center gap-2">
+                <FaComments /> Chatroom Management
+              </h2>
+              <button
+                onClick={handleToggleChatroom}
+                className={`px-4 py-2 rounded-lg font-semibold transition-colors flex items-center gap-2 ${
+                  chatroomStatus
+                    ? "bg-green-100 text-green-800 hover:bg-green-200"
+                    : "bg-red-100 text-red-800 hover:bg-red-200"
+                }`}
+              >
+                {chatroomStatus ? (
+                  <>
+                    <FaPowerOn /> Chatroom Active
+                  </>
+                ) : (
+                  <>
+                    <FaPowerOff /> Chatroom Offline
+                  </>
+                )}
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Messages Section */}
+              <div className="glass-card rounded-lg p-4">
+                <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                  <FaComments /> Messages ({chatroomMessages.length})
+                </h3>
+                <div className="space-y-3 max-h-96 overflow-y-auto">
+                  {chatroomMessages.length === 0 ? (
+                    <p className="text-gray-500 text-sm">No messages yet.</p>
+                  ) : (
+                    chatroomMessages.map((message) => (
+                      <div key={message.id} className="border border-gray-200 rounded-lg p-3">
+                        <div className="flex justify-between items-start mb-2">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="font-semibold text-sm text-gray-800">
+                                {message.user?.username || message.user?.name || "Anonymous"}
+                              </span>
+                              <span className="text-xs text-gray-500">
+                                {new Date(message.createdAt).toLocaleString()}
+                              </span>
+                            </div>
+                            <p className="text-sm text-gray-700">{message.content}</p>
+                          </div>
+                          <button
+                            onClick={() => handleDeleteMessage(message.id)}
+                            className="text-red-600 hover:text-red-800 ml-2"
+                            title="Delete message"
+                          >
+                            <FaTrash className="text-xs" />
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              {/* Questions Section */}
+              <div className="glass-card rounded-lg p-4">
+                <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                  <FaQuestionCircle /> Questions ({chatroomQuestions.length})
+                </h3>
+                <div className="space-y-3 max-h-96 overflow-y-auto">
+                  {chatroomQuestions.length === 0 ? (
+                    <p className="text-gray-500 text-sm">No questions yet.</p>
+                  ) : (
+                    chatroomQuestions.map((question) => (
+                      <div key={question.id} className="border border-gray-200 rounded-lg p-3">
+                        <div className="flex justify-between items-start mb-2">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="font-semibold text-sm text-gray-800">
+                                {question.isAnonymous ? "Anonymous" : (question.user?.name || "Unknown")}
+                              </span>
+                              <span className="text-xs text-gray-500">
+                                {new Date(question.createdAt).toLocaleString()}
+                              </span>
+                            </div>
+                            <h4 className="text-sm font-semibold text-gray-800 mb-1">{question.title}</h4>
+                            <p className="text-sm text-gray-700 mb-2">{question.content}</p>
+                            {question.tags && (
+                              <div className="flex gap-1 flex-wrap">
+                                {question.tags.split(',').map((tag: string, idx: number) => (
+                                  <span key={idx} className="text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded">
+                                    {tag.trim()}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                          <button
+                            onClick={() => handleDeleteQuestion(question.id)}
+                            className="text-red-600 hover:text-red-800 ml-2"
+                            title="Delete question"
+                          >
+                            <FaTrash className="text-xs" />
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </div>
