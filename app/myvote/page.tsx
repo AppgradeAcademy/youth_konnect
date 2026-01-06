@@ -89,6 +89,7 @@ export default function MyVote() {
 
   const handleCategoryClick = (category: Category) => {
     setSelectedCategory(category);
+    setContestants([]); // Clear previous contestants to show loading
     fetchContestants(category.id);
   };
 
