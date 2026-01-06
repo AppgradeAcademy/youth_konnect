@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { FaLock, FaUser, FaSignInAlt, FaVoteYea, FaPlus, FaTrash, FaChartBar, FaImage, FaEdit, FaUserCircle, FaCalendarAlt, FaMapMarkerAlt, FaClock, FaTimes } from "react-icons/fa";
+import { FaLock, FaUser, FaSignInAlt, FaVoteYea, FaPlus, FaTrash, FaChartBar, FaImage, FaEdit, FaUserCircle, FaCalendarAlt, FaMapMarkerAlt, FaClock, FaTimes, FaPoll } from "react-icons/fa";
 import Image from "next/image";
 
 interface Category {
@@ -23,6 +23,7 @@ interface Contestant {
   picture: string | null;
   createdAt: string;
   updatedAt: string | null;
+  _count?: { votes: number };
 }
 
 interface Event {
@@ -57,6 +58,7 @@ export default function AdminDashboard() {
   const [newEventDate, setNewEventDate] = useState("");
   const [newEventTime, setNewEventTime] = useState("");
   const [newEventPlace, setNewEventPlace] = useState("");
+  const [activeSection, setActiveSection] = useState<"categories" | "events" | "results">("categories");
   const router = useRouter();
 
   // Admin credentials
@@ -68,6 +70,7 @@ export default function AdminDashboard() {
     if (adminAuth === "true") {
       setIsAuthenticated(true);
       fetchCategories();
+      fetchEvents();
     }
   }, []);
 
@@ -406,6 +409,48 @@ export default function AdminDashboard() {
           </button>
         </div>
 
+        {/* Menu Bar */}
+        <div className="mb-6 border-b border-gray-200">
+          <nav className="flex gap-4 flex-wrap">
+            <button
+              onClick={() => setActiveSection("categories")}
+              className={`px-4 py-3 font-semibold transition-colors border-b-2 ${
+                activeSection === "categories"
+                  ? "text-indigo-600 border-indigo-600"
+                  : "text-gray-500 border-transparent hover:text-gray-700"
+              }`}
+            >
+              <FaVoteYea className="inline mr-2" />
+              Categories
+            </button>
+            <button
+              onClick={() => setActiveSection("events")}
+              className={`px-4 py-3 font-semibold transition-colors border-b-2 ${
+                activeSection === "events"
+                  ? "text-indigo-600 border-indigo-600"
+                  : "text-gray-500 border-transparent hover:text-gray-700"
+              }`}
+            >
+              <FaCalendarAlt className="inline mr-2" />
+              Events
+            </button>
+            <button
+              onClick={() => setActiveSection("results")}
+              className={`px-4 py-3 font-semibold transition-colors border-b-2 ${
+                activeSection === "results"
+                  ? "text-indigo-600 border-indigo-600"
+                  : "text-gray-500 border-transparent hover:text-gray-700"
+              }`}
+            >
+              <FaPoll className="inline mr-2" />
+              Poll Results
+            </button>
+          </nav>
+        </div>
+
+        {/* Categories Section */}
+        {activeSection === "categories" && (
+          <>
         {/* Add New Category Form */}
         <div className="mb-6 sm:mb-8 p-4 sm:p-6 glass rounded-xl">
           <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-4 flex items-center gap-2">
@@ -702,9 +747,12 @@ export default function AdminDashboard() {
             </div>
           )}
         </div>
+          </>
+        )}
 
-        {/* Events Management Section */}
-        <div className="mt-8 pt-8 border-t border-gray-300">
+        {/* Events Section */}
+        {activeSection === "events" && (
+          <div>
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
             <h2 className="text-xl sm:text-2xl font-bold text-gray-800 flex items-center gap-2">
               <FaCalendarAlt /> Events Management ({events.length})
@@ -839,6 +887,104 @@ export default function AdminDashboard() {
             </div>
           )}
         </div>
+        )}
+
+        {/* Poll Results Section */}
+        {activeSection === "results" && (
+          <div>
+            <div className="mb-6">
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                <FaPoll /> Poll Results & Statistics
+              </h2>
+              <p className="text-gray-600 mb-6">View detailed voting results for all categories and contestants.</p>
+            </div>
+
+            {categories.length === 0 ? (
+              <div className="text-center py-12 text-gray-500">
+                <FaVoteYea className="text-6xl mx-auto mb-4 opacity-50" />
+                <p className="text-xl">No categories available. Add categories to view poll results.</p>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {categories.map((category) => {
+                  const categoryContestants = contestants[category.id] || [];
+                  const totalVotes = category._count.votes;
+                  
+                  return (
+                    <div key={category.id} className="glass-card rounded-xl p-4 sm:p-6 border border-gray-200">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4 pb-4 border-b border-gray-200">
+                        <div>
+                          <h3 className="text-xl sm:text-2xl font-bold text-gray-800 mb-2">{category.name}</h3>
+                          {category.description && (
+                            <p className="text-gray-600">{category.description}</p>
+                          )}
+                        </div>
+                        <div className="text-right">
+                          <div className="text-2xl font-bold text-indigo-600">{totalVotes}</div>
+                          <div className="text-sm text-gray-500">Total Votes</div>
+                        </div>
+                      </div>
+
+                      {categoryContestants.length === 0 ? (
+                        <div className="text-center py-8 text-gray-500">
+                          <FaUserCircle className="text-4xl mx-auto mb-2 opacity-50" />
+                          <p>No contestants in this category.</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-4">
+                          <h4 className="text-lg font-semibold text-gray-700 mb-3">Contestant Results:</h4>
+                          {categoryContestants.map((contestant) => {
+                            const contestantVotes = contestant._count?.votes || 0;
+                            const percentage = totalVotes > 0 ? ((contestantVotes / totalVotes) * 100).toFixed(1) : 0;
+
+                            return (
+                              <div key={contestant.id} className="border border-gray-200 rounded-lg p-4">
+                                <div className="flex items-start gap-4">
+                                  {contestant.picture && (
+                                    <img
+                                      src={contestant.picture}
+                                      alt={`${contestant.name} ${contestant.surname}`}
+                                      className="w-16 h-16 sm:w-20 sm:h-20 object-cover rounded-lg flex-shrink-0"
+                                      onError={(e) => {
+                                        (e.target as HTMLImageElement).style.display = 'none';
+                                      }}
+                                    />
+                                  )}
+                                  {!contestant.picture && (
+                                    <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                      <FaUserCircle className="text-2xl sm:text-3xl text-gray-400" />
+                                    </div>
+                                  )}
+                                  <div className="flex-1 min-w-0">
+                                    <h5 className="text-lg font-bold text-gray-800 mb-2">
+                                      {contestant.name} {contestant.surname}
+                                    </h5>
+                                    <div className="mb-2">
+                                      <div className="flex items-center justify-between mb-1">
+                                        <span className="text-sm text-gray-600">Votes: {contestantVotes}</span>
+                                        <span className="text-sm font-semibold text-indigo-600">{percentage}%</span>
+                                      </div>
+                                      <div className="w-full bg-gray-200 rounded-full h-3">
+                                        <div
+                                          className="bg-indigo-600 h-3 rounded-full transition-all"
+                                          style={{ width: `${percentage}%` }}
+                                        />
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
