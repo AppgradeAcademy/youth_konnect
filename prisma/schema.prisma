@@ -14,15 +14,16 @@ model User {
   id        String   @id @default(cuid())
   email     String   @unique
   name      String
-  username  String?  // Optional username for chat
+  username  String? // Optional username for chat
   password  String
   role      String   @default("user") // "user" or "admin"
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   votes     Vote[]
   messages  ChatMessage[]
   questions Question[]
+  answers   Answer[]
 }
 
 model Category {
@@ -33,7 +34,7 @@ model Category {
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  
+
   votes       Vote[]
   contestants Contestant[]
 }
@@ -46,7 +47,7 @@ model Contestant {
   picture    String?
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
-  
+
   category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   votes    Vote[]
 }
@@ -58,11 +59,11 @@ model Vote {
   categoryId   String
   contestantId String
   createdAt    DateTime @default(now())
-  
+
   user       User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
   category   Category   @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   contestant Contestant @relation(fields: [contestantId], references: [id], onDelete: Cascade)
-  
+
   @@unique([userId, categoryId, contestantId], name: "userId_categoryId_contestantId")
   @@unique([email, categoryId, contestantId], name: "email_categoryId_contestantId")
 }
@@ -72,18 +73,42 @@ model ChatMessage {
   content   String
   userId    String
   createdAt DateTime @default(now())
-  
+
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Question {
+  id          String   @id @default(cuid())
+  title       String
+  content     String
+  userId      String
+  isAnonymous Boolean  @default(false)
+  tags        String? // Comma-separated tags
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  answers Answer[]
+}
+
+model Answer {
   id         String   @id @default(cuid())
-  title      String
-  content    String
+  questionId String
   userId     String
-  isAnonymous Boolean @default(false)
+  content    String
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
-  
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Event {
+  id        String   @id @default(cuid())
+  name      String
+  date      DateTime
+  time      String // Time in HH:MM format
+  place     String // Place/address
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

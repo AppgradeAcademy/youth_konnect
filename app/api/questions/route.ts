@@ -13,6 +13,22 @@ export async function GET() {
             email: true,
           },
         },
+        answers: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                username: true,
+                email: true,
+              },
+            },
+          },
+          orderBy: { createdAt: 'asc' },
+        },
+        _count: {
+          select: { answers: true },
+        },
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -36,7 +52,7 @@ export async function GET() {
 // POST create question
 export async function POST(request: NextRequest) {
   try {
-    const { userId, title, content, isAnonymous } = await request.json();
+    const { userId, title, content, isAnonymous, tags } = await request.json();
 
     if (!userId || !title || !content) {
       return NextResponse.json(
@@ -51,6 +67,7 @@ export async function POST(request: NextRequest) {
         title,
         content,
         isAnonymous: isAnonymous || false,
+        tags: tags || null,
       },
       include: {
         user: {
@@ -59,6 +76,9 @@ export async function POST(request: NextRequest) {
             name: true,
             email: true,
           },
+        },
+        _count: {
+          select: { answers: true },
         },
       },
     });

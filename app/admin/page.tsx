@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { FaLock, FaUser, FaSignInAlt, FaVoteYea, FaPlus, FaTrash, FaChartBar, FaImage, FaEdit, FaUserCircle } from "react-icons/fa";
+import { FaLock, FaUser, FaSignInAlt, FaVoteYea, FaPlus, FaTrash, FaChartBar, FaImage, FaEdit, FaUserCircle, FaCalendarAlt, FaMapMarkerAlt, FaClock, FaTimes } from "react-icons/fa";
 import Image from "next/image";
 
 interface Category {
@@ -25,6 +25,16 @@ interface Contestant {
   updatedAt: string | null;
 }
 
+interface Event {
+  id: string;
+  name: string;
+  date: string;
+  time: string;
+  place: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export default function AdminDashboard() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [username, setUsername] = useState("");
@@ -40,6 +50,13 @@ export default function AdminDashboard() {
   const [newContestant, setNewContestant] = useState<Record<string, { name: string; surname: string; picture: string }>>({});
   const [uploadingImage, setUploadingImage] = useState<Record<string, boolean>>({});
   const [contestantImagePreview, setContestantImagePreview] = useState<Record<string, string>>({});
+  const [events, setEvents] = useState<Event[]>([]);
+  const [showEventForm, setShowEventForm] = useState(false);
+  const [editingEvent, setEditingEvent] = useState<Event | null>(null);
+  const [newEventName, setNewEventName] = useState("");
+  const [newEventDate, setNewEventDate] = useState("");
+  const [newEventTime, setNewEventTime] = useState("");
+  const [newEventPlace, setNewEventPlace] = useState("");
   const router = useRouter();
 
   // Admin credentials
@@ -70,6 +87,7 @@ export default function AdminDashboard() {
     sessionStorage.setItem("adminAuth", "true");
     setIsAuthenticated(true);
     fetchCategories();
+    fetchEvents();
   };
 
   const handleLogout = () => {
@@ -226,6 +244,91 @@ export default function AdminDashboard() {
       console.error("Error updating category:", error);
       alert("Failed to update category");
     }
+  };
+
+  const fetchEvents = async () => {
+    try {
+      const response = await fetch("/api/events");
+      const data = await response.json();
+      setEvents(data);
+    } catch (error) {
+      console.error("Error fetching events:", error);
+    }
+  };
+
+  const handleAddEvent = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      const url = editingEvent ? `/api/events/${editingEvent.id}` : "/api/events";
+      const method = editingEvent ? "PATCH" : "POST";
+
+      const response = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: newEventName,
+          date: newEventDate,
+          time: newEventTime,
+          place: newEventPlace,
+        }),
+      });
+
+      if (response.ok) {
+        setNewEventName("");
+        setNewEventDate("");
+        setNewEventTime("");
+        setNewEventPlace("");
+        setShowEventForm(false);
+        setEditingEvent(null);
+        fetchEvents();
+      } else {
+        alert("Failed to save event");
+      }
+    } catch (error) {
+      console.error("Error saving event:", error);
+      alert("Failed to save event");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEditEvent = (event: Event) => {
+    setEditingEvent(event);
+    setNewEventName(event.name);
+    setNewEventDate(event.date.split('T')[0]); // Extract date part
+    setNewEventTime(event.time);
+    setNewEventPlace(event.place);
+    setShowEventForm(true);
+  };
+
+  const handleDeleteEvent = async (eventId: string) => {
+    if (!confirm("Are you sure you want to delete this event?")) return;
+
+    try {
+      const response = await fetch(`/api/events/${eventId}`, {
+        method: "DELETE",
+      });
+
+      if (response.ok) {
+        fetchEvents();
+      } else {
+        alert("Failed to delete event");
+      }
+    } catch (error) {
+      console.error("Error deleting event:", error);
+      alert("Failed to delete event");
+    }
+  };
+
+  const handleCancelEventForm = () => {
+    setShowEventForm(false);
+    setEditingEvent(null);
+    setNewEventName("");
+    setNewEventDate("");
+    setNewEventTime("");
+    setNewEventPlace("");
   };
 
   if (!isAuthenticated) {
@@ -596,6 +699,143 @@ export default function AdminDashboard() {
                   </div>
                 </div>
               ))}
+            </div>
+          )}
+        </div>
+
+        {/* Events Management Section */}
+        <div className="mt-8 pt-8 border-t border-gray-300">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-800 flex items-center gap-2">
+              <FaCalendarAlt /> Events Management ({events.length})
+            </h2>
+            <button
+              onClick={() => {
+                handleCancelEventForm();
+                setShowEventForm(!showEventForm);
+              }}
+              className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors flex items-center gap-2 text-sm"
+            >
+              {showEventForm ? <FaTimes /> : <FaPlus />}
+              {showEventForm ? "Cancel" : "Add Event"}
+            </button>
+          </div>
+
+          {/* Add/Edit Event Form */}
+          {showEventForm && (
+            <form onSubmit={handleAddEvent} className="mb-6 p-4 glass rounded-lg">
+              <h3 className="text-lg font-bold text-gray-800 mb-4">
+                {editingEvent ? "Edit Event" : "Add New Event"}
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Event Name *
+                  </label>
+                  <input
+                    type="text"
+                    value={newEventName}
+                    onChange={(e) => setNewEventName(e.target.value)}
+                    required
+                    className="w-full px-3 py-2 glass-card border-0 rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm"
+                    placeholder="Event name"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Date *
+                  </label>
+                  <input
+                    type="date"
+                    value={newEventDate}
+                    onChange={(e) => setNewEventDate(e.target.value)}
+                    required
+                    className="w-full px-3 py-2 glass-card border-0 rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Time * (HH:MM)
+                  </label>
+                  <input
+                    type="time"
+                    value={newEventTime}
+                    onChange={(e) => setNewEventTime(e.target.value)}
+                    required
+                    className="w-full px-3 py-2 glass-card border-0 rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Place/Address *
+                  </label>
+                  <input
+                    type="text"
+                    value={newEventPlace}
+                    onChange={(e) => setNewEventPlace(e.target.value)}
+                    required
+                    className="w-full px-3 py-2 glass-card border-0 rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm"
+                    placeholder="Event location"
+                  />
+                </div>
+              </div>
+              <button
+                type="submit"
+                disabled={loading}
+                className="mt-4 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors flex items-center gap-2 text-sm disabled:opacity-50"
+              >
+                <FaPlus /> {loading ? "Saving..." : editingEvent ? "Update Event" : "Add Event"}
+              </button>
+            </form>
+          )}
+
+          {/* Events List */}
+          {events.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              <FaCalendarAlt className="text-5xl mx-auto mb-4 opacity-50" />
+              <p className="text-lg">No events added yet. Click "Add Event" to create one.</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {events
+                .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+                .map((event) => (
+                  <div key={event.id} className="glass-card rounded-lg p-4 border border-gray-200">
+                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                      <div className="flex-1">
+                        <h3 className="text-xl font-bold text-gray-800 mb-3">{event.name}</h3>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm text-gray-600">
+                          <div className="flex items-center gap-2">
+                            <FaCalendarAlt className="text-indigo-600" />
+                            <span>{new Date(event.date).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" })}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <FaClock className="text-indigo-600" />
+                            <span>{event.time}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <FaMapMarkerAlt className="text-indigo-600" />
+                            <span>{event.place}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleEditEvent(event)}
+                          className="bg-blue-100 text-blue-800 px-4 py-2 rounded-lg hover:bg-blue-200 transition-colors flex items-center gap-2 text-sm"
+                        >
+                          <FaEdit /> Edit
+                        </button>
+                        <button
+                          onClick={() => handleDeleteEvent(event.id)}
+                          className="bg-red-100 text-red-800 px-4 py-2 rounded-lg hover:bg-red-200 transition-colors flex items-center gap-2 text-sm"
+                        >
+                          <FaTrash /> Delete
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
             </div>
           )}
         </div>

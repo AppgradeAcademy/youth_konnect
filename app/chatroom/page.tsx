@@ -2,9 +2,21 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { FaComments, FaQuestionCircle, FaPaperPlane, FaUser, FaEdit, FaUserSecret, FaCheck, FaTimes } from "react-icons/fa";
+import { FaComments, FaQuestionCircle, FaPaperPlane, FaUser, FaEdit, FaUserSecret, FaCheck, FaTimes, FaTag, FaReply } from "react-icons/fa";
 
 interface Message {
+  id: string;
+  content: string;
+  createdAt: string;
+  user: {
+    id: string;
+    name: string;
+    username: string | null;
+    email: string;
+  };
+}
+
+interface Answer {
   id: string;
   content: string;
   createdAt: string;
@@ -21,12 +33,15 @@ interface Question {
   title: string;
   content: string;
   isAnonymous: boolean;
+  tags: string | null;
   createdAt: string;
   user: {
     id: string;
     name: string;
     email: string;
   } | null;
+  answers?: Answer[];
+  _count?: { answers: number };
 }
 
 export default function Chatroom() {
@@ -35,7 +50,10 @@ export default function Chatroom() {
   const [newMessage, setNewMessage] = useState("");
   const [newQuestionTitle, setNewQuestionTitle] = useState("");
   const [newQuestionContent, setNewQuestionContent] = useState("");
+  const [newQuestionTags, setNewQuestionTags] = useState("");
   const [isQuestionAnonymous, setIsQuestionAnonymous] = useState(false);
+  const [answeringQuestion, setAnsweringQuestion] = useState<string | null>(null);
+  const [newAnswer, setNewAnswer] = useState<Record<string, string>>({});
   const [user, setUser] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<"chat" | "questions">("chat");
   const [loading, setLoading] = useState(true);
@@ -170,12 +188,14 @@ export default function Chatroom() {
           title: newQuestionTitle,
           content: newQuestionContent,
           isAnonymous: isQuestionAnonymous,
+          tags: newQuestionTags.trim() || null,
         }),
       });
 
       if (response.ok) {
         setNewQuestionTitle("");
         setNewQuestionContent("");
+        setNewQuestionTags("");
         setIsQuestionAnonymous(false);
         fetchQuestions();
         setActiveTab("questions");
@@ -188,14 +208,43 @@ export default function Chatroom() {
     }
   };
 
+  const handleSubmitAnswer = async (questionId: string, e: React.FormEvent) => {
+    e.preventDefault();
+    const answerContent = newAnswer[questionId];
+    if (!answerContent?.trim() || !user) return;
+
+    try {
+      const response = await fetch(`/api/questions/${questionId}/answers`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: user.id,
+          content: answerContent,
+        }),
+      });
+
+      if (response.ok) {
+        setNewAnswer(prev => ({ ...prev, [questionId]: "" }));
+        setAnsweringQuestion(null);
+        fetchQuestions();
+      } else {
+        alert("Failed to submit answer");
+      }
+    } catch (error) {
+      console.error("Error submitting answer:", error);
+      alert("Failed to submit answer");
+    }
+  };
+
+  const displayAnswerName = (user: { name: string; username: string | null }) => {
+    return user.username || user.name;
+  };
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleString();
   };
 
-  const displayName = (messageUser: Message["user"]) => {
-    return messageUser.username || messageUser.name;
-  };
 
   if (loading) {
     return (
@@ -379,6 +428,13 @@ export default function Chatroom() {
                   rows={4}
                   className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#DC143C] focus:border-[#DC143C]"
                 />
+                <input
+                  type="text"
+                  value={newQuestionTags}
+                  onChange={(e) => setNewQuestionTags(e.target.value)}
+                  placeholder="Tags (comma-separated, e.g., faith, prayer, community)"
+                  className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#DC143C] focus:border-[#DC143C]"
+                />
                 <div className="flex items-center gap-2">
                   <input
                     type="checkbox"
@@ -422,17 +478,104 @@ export default function Chatroom() {
                       </span>
                     </div>
                     <p className="text-sm sm:text-base text-gray-600 mb-3">{question.content}</p>
-                    <p className="text-sm text-gray-500 flex items-center gap-2">
-                      <FaUser /> Asked by:{" "}
-                      {question.user ? (
-                        question.user.name
-                      ) : (
-                        <span className="flex items-center gap-1">
-                          <FaUserSecret className="text-[#DC143C]" />
-                          Anonymous
+                    
+                    {/* Tags */}
+                    {question.tags && (
+                      <div className="flex flex-wrap gap-2 mb-3">
+                        {question.tags.split(',').map((tag, idx) => (
+                          tag.trim() && (
+                            <span
+                              key={idx}
+                              className="inline-flex items-center gap-1 px-2 py-1 bg-[#DC143C]/10 text-[#DC143C] rounded-full text-xs font-medium"
+                            >
+                              <FaTag className="text-xs" />
+                              {tag.trim()}
+                            </span>
+                          )
+                        ))}
+                      </div>
+                    )}
+
+                    <div className="flex items-center justify-between mb-3">
+                      <p className="text-sm text-gray-500 flex items-center gap-2">
+                        <FaUser /> Asked by:{" "}
+                        {question.user ? (
+                          question.user.name
+                        ) : (
+                          <span className="flex items-center gap-1">
+                            <FaUserSecret className="text-[#DC143C]" />
+                            Anonymous
+                          </span>
+                        )}
+                      </p>
+                      {question._count && question._count.answers > 0 && (
+                        <span className="text-sm text-gray-500">
+                          {question._count.answers} {question._count.answers === 1 ? 'answer' : 'answers'}
                         </span>
                       )}
-                    </p>
+                    </div>
+
+                    {/* Answers */}
+                    {question.answers && question.answers.length > 0 && (
+                      <div className="mt-4 pt-4 border-t border-gray-200 space-y-3">
+                        <h4 className="text-sm font-semibold text-gray-700 mb-2">Answers:</h4>
+                        {question.answers.map((answer) => (
+                          <div key={answer.id} className="pl-4 border-l-2 border-[#DC143C]/30">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="text-sm font-semibold text-gray-900">
+                                {displayAnswerName(answer.user)}
+                              </span>
+                              <span className="text-xs text-gray-400">
+                                {formatDate(answer.createdAt)}
+                              </span>
+                            </div>
+                            <p className="text-sm text-gray-700">{answer.content}</p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Answer Form */}
+                    {answeringQuestion === question.id ? (
+                      <form
+                        onSubmit={(e) => handleSubmitAnswer(question.id, e)}
+                        className="mt-4 pt-4 border-t border-gray-200"
+                      >
+                        <textarea
+                          value={newAnswer[question.id] || ""}
+                          onChange={(e) => setNewAnswer(prev => ({ ...prev, [question.id]: e.target.value }))}
+                          placeholder="Type your answer..."
+                          required
+                          rows={3}
+                          className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#DC143C] focus:border-[#DC143C] mb-2"
+                        />
+                        <div className="flex gap-2">
+                          <button
+                            type="submit"
+                            className="bg-[#DC143C] text-white px-4 py-2 rounded-lg font-semibold hover:bg-[#B8122E] transition-colors flex items-center gap-2 text-sm"
+                          >
+                            <FaPaperPlane /> Submit Answer
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setAnsweringQuestion(null);
+                              setNewAnswer(prev => ({ ...prev, [question.id]: "" }));
+                            }}
+                            className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-semibold hover:bg-gray-300 transition-colors text-sm"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </form>
+                    ) : (
+                      <button
+                        onClick={() => setAnsweringQuestion(question.id)}
+                        className="mt-3 text-[#DC143C] hover:text-[#B8122E] flex items-center gap-2 text-sm font-semibold"
+                      >
+                        <FaReply /> Answer this question
+                      </button>
+                    )}
                   </div>
                 ))
               )}

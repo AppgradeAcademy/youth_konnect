@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { FaVoteYea, FaComments, FaInfoCircle, FaArrowRight } from "react-icons/fa";
 import Banner from "@/components/Banner";
+import EventsCalendar from "@/components/EventsCalendar";
 
 export default function Home() {
   return (
@@ -77,6 +78,11 @@ export default function Home() {
             </div>
           </div>
         </Link>
+      </div>
+
+      {/* Events Calendar */}
+      <div className="mt-6 sm:mt-8">
+        <EventsCalendar />
       </div>
     </div>
   );

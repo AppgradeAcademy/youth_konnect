@@ -19,7 +19,6 @@ interface Contestant {
   name: string;
   surname: string;
   picture: string | null;
-  _count: { votes: number };
 }
 
 interface Vote {
@@ -295,12 +294,9 @@ export default function MyVote() {
                           </div>
                         )}
                         <div className="flex-1 min-w-0">
-                          <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-1">
+                          <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-4">
                             {contestant.name} {contestant.surname}
                           </h3>
-                          <p className="text-sm text-gray-500 flex items-center gap-2 mb-4">
-                            <FaVoteYea /> {contestant._count.votes} vote{contestant._count.votes !== 1 ? "s" : ""}
-                          </p>
                           {user ? (
                             <button
                               onClick={() => handleVote(contestant.id, contestant.categoryId)}
@@ -370,11 +366,8 @@ export default function MyVote() {
                       <div className="flex-1 min-w-0">
                         <h3 className="text-xl sm:text-2xl font-bold text-gray-800 mb-2">{category.name}</h3>
                         {category.description && (
-                          <p className="text-sm sm:text-base text-gray-600 mb-3">{category.description}</p>
+                          <p className="text-sm sm:text-base text-gray-600">{category.description}</p>
                         )}
-                        <p className="text-sm text-gray-500 flex items-center gap-2">
-                          <FaVoteYea /> {category._count.votes} vote{category._count.votes !== 1 ? "s" : ""}
-                        </p>
                       </div>
                     </div>
                   </div>
