@@ -589,6 +589,28 @@ export default function AdminDashboard() {
               <FaPoll className="inline mr-2" />
               Poll Results
             </button>
+            <button
+              onClick={() => setActiveSection("participants")}
+              className={`px-4 py-3 font-semibold transition-colors border-b-2 ${
+                activeSection === "participants"
+                  ? "text-indigo-600 border-indigo-600"
+                  : "text-gray-500 border-transparent hover:text-gray-700"
+              }`}
+            >
+              <FaUsers className="inline mr-2" />
+              Participants
+            </button>
+            <button
+              onClick={() => setActiveSection("chatroom")}
+              className={`px-4 py-3 font-semibold transition-colors border-b-2 ${
+                activeSection === "chatroom"
+                  ? "text-indigo-600 border-indigo-600"
+                  : "text-gray-500 border-transparent hover:text-gray-700"
+              }`}
+            >
+              <FaComments className="inline mr-2" />
+              Chatroom
+            </button>
           </nav>
         </div>
 
