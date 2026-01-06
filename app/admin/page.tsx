@@ -772,7 +772,11 @@ export default function AdminDashboard() {
                                   <img
                                     src={contestant.picture}
                                     alt={`${contestant.name} ${contestant.surname}`}
-                                    className="w-16 h-16 object-cover rounded-lg flex-shrink-0"
+                                    className="w-16 h-16 object-cover rounded-lg flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
+                                    onClick={() => setSelectedImage({ 
+                                      url: contestant.picture!, 
+                                      alt: `${contestant.name} ${contestant.surname}` 
+                                    })}
                                     onError={(e) => {
                                       (e.target as HTMLImageElement).style.display = 'none';
                                     }}
@@ -1028,7 +1032,11 @@ export default function AdminDashboard() {
                                     <img
                                       src={contestant.picture}
                                       alt={`${contestant.name} ${contestant.surname}`}
-                                      className="w-16 h-16 sm:w-20 sm:h-20 object-cover rounded-lg flex-shrink-0"
+                                      className="w-16 h-16 sm:w-20 sm:h-20 object-cover rounded-lg flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
+                                      onClick={() => setSelectedImage({ 
+                                        url: contestant.picture!, 
+                                        alt: `${contestant.name} ${contestant.surname}` 
+                                      })}
                                       onError={(e) => {
                                         (e.target as HTMLImageElement).style.display = 'none';
                                       }}

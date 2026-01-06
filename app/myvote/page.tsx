@@ -302,7 +302,11 @@ export default function MyVote() {
                             <img
                               src={contestant.picture}
                               alt={`${contestant.name} ${contestant.surname}`}
-                              className="w-16 h-16 sm:w-20 sm:h-20 object-cover rounded-lg"
+                              className="w-16 h-16 sm:w-20 sm:h-20 object-cover rounded-lg cursor-pointer hover:opacity-80 transition-opacity"
+                              onClick={() => setSelectedImage({ 
+                                url: contestant.picture!, 
+                                alt: `${contestant.name} ${contestant.surname}` 
+                              })}
                               onError={(e) => {
                                 (e.target as HTMLImageElement).style.display = 'none';
                               }}
