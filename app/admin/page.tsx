@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { FaLock, FaUser, FaSignInAlt, FaVoteYea, FaPlus, FaTrash, FaChartBar, FaImage, FaEdit, FaUserCircle, FaCalendarAlt, FaMapMarkerAlt, FaClock, FaTimes, FaPoll, FaUsers, FaComments, FaPowerOff, FaQuestionCircle } from "react-icons/fa";
+import { FaLock, FaUser, FaSignInAlt, FaVoteYea, FaPlus, FaTrash, FaChartBar, FaImage, FaEdit, FaUserCircle, FaCalendarAlt, FaMapMarkerAlt, FaClock, FaTimes, FaPoll, FaUsers, FaComments, FaPowerOff, FaQuestionCircle, FaCheckCircle } from "react-icons/fa";
 import ImageModal from "@/components/ImageModal";
 import Image from "next/image";
 
@@ -1285,7 +1285,7 @@ export default function AdminDashboard() {
               >
                 {chatroomStatus ? (
                   <>
-                    <FaPowerOn /> Chatroom Active
+                    <FaCheckCircle /> Chatroom Active
                   </>
                 ) : (
                   <>
