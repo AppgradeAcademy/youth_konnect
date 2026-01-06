@@ -837,12 +837,12 @@ export default function AdminDashboard() {
 
                             {/* Mode Selection: Only show when adding (not editing) */}
                             {!editingContestant[category.id] && (
-                              <div className="mb-4 p-3 bg-indigo-50 rounded-lg">
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                  Choose Option:
+                              <div className="mb-4 p-4 bg-indigo-50 border border-indigo-200 rounded-lg">
+                                <label className="block text-sm font-semibold text-gray-800 mb-3">
+                                  Choose how to add contestant:
                                 </label>
-                                <div className="flex gap-4">
-                                  <label className="flex items-center gap-2 cursor-pointer">
+                                <div className="flex flex-col sm:flex-row gap-3">
+                                  <label className="flex items-center gap-2 cursor-pointer p-3 bg-white rounded-lg border-2 border-gray-200 hover:border-indigo-400 transition-colors flex-1">
                                     <input
                                       type="radio"
                                       name={`mode-${category.id}`}
@@ -852,11 +852,11 @@ export default function AdminDashboard() {
                                         setContestantMode(prev => ({ ...prev, [category.id]: "new" }));
                                         setSelectedExistingContestant(prev => ({ ...prev, [category.id]: "" }));
                                       }}
-                                      className="text-indigo-600"
+                                      className="text-indigo-600 w-4 h-4"
                                     />
-                                    <span className="text-sm">Add New Contestant</span>
+                                    <span className="text-sm font-medium text-gray-700">Add New Contestant</span>
                                   </label>
-                                  <label className="flex items-center gap-2 cursor-pointer">
+                                  <label className="flex items-center gap-2 cursor-pointer p-3 bg-white rounded-lg border-2 border-gray-200 hover:border-indigo-400 transition-colors flex-1">
                                     <input
                                       type="radio"
                                       name={`mode-${category.id}`}
@@ -867,9 +867,9 @@ export default function AdminDashboard() {
                                         setNewContestant(prev => ({ ...prev, [category.id]: { name: "", surname: "", picture: "" } }));
                                         setContestantImagePreview(prev => ({ ...prev, [category.id]: "" }));
                                       }}
-                                      className="text-indigo-600"
+                                      className="text-indigo-600 w-4 h-4"
                                     />
-                                    <span className="text-sm">Select Existing Contestant</span>
+                                    <span className="text-sm font-medium text-gray-700">Add from Previous Categories</span>
                                   </label>
                                 </div>
                               </div>
