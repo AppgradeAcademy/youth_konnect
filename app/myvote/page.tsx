@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { FaVoteYea, FaPlus, FaTimes, FaCheck, FaArrowLeft, FaUserCircle, FaLock } from "react-icons/fa";
+import ImageModal from "@/components/ImageModal";
 
 interface Category {
   id: string;
@@ -34,6 +35,7 @@ export default function MyVote() {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [loadingContestants, setLoadingContestants] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<{ url: string; alt: string } | null>(null);
   const [newCategoryName, setNewCategoryName] = useState("");
   const [newCategoryDesc, setNewCategoryDesc] = useState("");
   const [showAddForm, setShowAddForm] = useState(false);
@@ -396,6 +398,16 @@ export default function MyVote() {
           </div>
         )}
       </div>
+
+      {/* Image Modal */}
+      {selectedImage && (
+        <ImageModal
+          imageUrl={selectedImage.url}
+          alt={selectedImage.alt}
+          isOpen={!!selectedImage}
+          onClose={() => setSelectedImage(null)}
+        />
+      )}
     </div>
   );
 }

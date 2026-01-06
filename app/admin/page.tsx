@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { FaLock, FaUser, FaSignInAlt, FaVoteYea, FaPlus, FaTrash, FaChartBar, FaImage, FaEdit, FaUserCircle, FaCalendarAlt, FaMapMarkerAlt, FaClock, FaTimes, FaPoll } from "react-icons/fa";
+import ImageModal from "@/components/ImageModal";
 import Image from "next/image";
 
 interface Category {
@@ -61,6 +62,7 @@ export default function AdminDashboard() {
   const [newEventTime, setNewEventTime] = useState("");
   const [newEventPlace, setNewEventPlace] = useState("");
   const [activeSection, setActiveSection] = useState<"categories" | "events" | "results">("categories");
+  const [selectedImage, setSelectedImage] = useState<{ url: string; alt: string } | null>(null);
   const router = useRouter();
 
   // Admin credentials
@@ -1068,6 +1070,16 @@ export default function AdminDashboard() {
           </div>
         )}
       </div>
+
+      {/* Image Modal */}
+      {selectedImage && (
+        <ImageModal
+          imageUrl={selectedImage.url}
+          alt={selectedImage.alt}
+          isOpen={!!selectedImage}
+          onClose={() => setSelectedImage(null)}
+        />
+      )}
     </div>
   );
 }
