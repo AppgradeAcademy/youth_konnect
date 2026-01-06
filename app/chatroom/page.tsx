@@ -245,6 +245,10 @@ export default function Chatroom() {
     return date.toLocaleString();
   };
 
+  const displayName = (messageUser: Message["user"]) => {
+    return messageUser.username || messageUser.name;
+  };
+
 
   if (loading) {
     return (
