@@ -621,16 +621,34 @@ export default function AdminDashboard() {
                             <FaUserCircle /> Contestants ({contestants[category.id]?.length || 0})
                           </h4>
                           <button
-                            onClick={() => setShowContestantForm(prev => ({ ...prev, [category.id]: !prev[category.id] }))}
+                            onClick={() => {
+                              if (showContestantForm[category.id]) {
+                                handleCancelContestantEdit(category.id);
+                              } else {
+                                setShowContestantForm(prev => ({ ...prev, [category.id]: true }));
+                              }
+                            }}
                             className="bg-indigo-100 text-indigo-700 px-3 sm:px-4 py-2 rounded-lg hover:bg-indigo-200 transition-colors flex items-center gap-2 text-xs sm:text-sm w-full sm:w-auto justify-center"
                           >
                             <FaPlus /> {showContestantForm[category.id] ? "Cancel" : "Add Contestant"}
                           </button>
                         </div>
 
-                        {/* Add Contestant Form */}
+                        {/* Add/Edit Contestant Form */}
                         {showContestantForm[category.id] && (
                           <form onSubmit={(e) => handleAddContestant(category.id, e)} className="mb-4 p-3 sm:p-4 glass rounded-lg">
+                            <div className="flex items-center justify-between mb-4">
+                              <h4 className="text-lg font-bold text-gray-800">
+                                {editingContestant[category.id] ? "Edit Contestant" : "Add New Contestant"}
+                              </h4>
+                              <button
+                                type="button"
+                                onClick={() => handleCancelContestantEdit(category.id)}
+                                className="text-gray-500 hover:text-gray-700"
+                              >
+                                <FaTimes />
+                              </button>
+                            </div>
                             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
                               <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
