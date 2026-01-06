@@ -51,6 +51,9 @@ export default function AdminDashboard() {
   const [showContestantForm, setShowContestantForm] = useState<Record<string, boolean>>({});
   const [newContestant, setNewContestant] = useState<Record<string, { name: string; surname: string; picture: string }>>({});
   const [editingContestant, setEditingContestant] = useState<Record<string, string | null>>({}); // categoryId -> contestantId
+  const [allExistingContestants, setAllExistingContestants] = useState<any[]>([]);
+  const [contestantMode, setContestantMode] = useState<Record<string, "new" | "existing">>({}); // categoryId -> mode
+  const [selectedExistingContestant, setSelectedExistingContestant] = useState<Record<string, string>>({}); // categoryId -> contestantId
   const [uploadingImage, setUploadingImage] = useState<Record<string, boolean>>({});
   const [contestantImagePreview, setContestantImagePreview] = useState<Record<string, string>>({});
   const [loadingContestants, setLoadingContestants] = useState<Record<string, boolean>>({});
@@ -129,8 +132,20 @@ export default function AdminDashboard() {
       data.forEach((cat: Category) => {
         fetchContestants(cat.id);
       });
+      // Fetch all existing contestants for selection
+      fetchAllContestants();
     } catch (error) {
       console.error("Error fetching categories:", error);
+    }
+  };
+
+  const fetchAllContestants = async () => {
+    try {
+      const response = await fetch("/api/contestants");
+      const data = await response.json();
+      setAllExistingContestants(data);
+    } catch (error) {
+      console.error("Error fetching all contestants:", error);
     }
   };
 
@@ -149,13 +164,39 @@ export default function AdminDashboard() {
 
   const handleAddContestant = async (categoryId: string, e: React.FormEvent) => {
     e.preventDefault();
-    const contestant = newContestant[categoryId];
-    if (!contestant || !contestant.name || !contestant.surname) {
-      alert("Please fill in name and surname");
-      return;
+    
+    const isEditing = editingContestant[categoryId];
+    const mode = contestantMode[categoryId] || "new";
+    
+    let name: string, surname: string, picture: string | null;
+    
+    if (mode === "existing" && !isEditing) {
+      // Selecting existing contestant
+      const selectedId = selectedExistingContestant[categoryId];
+      if (!selectedId) {
+        alert("Please select an existing contestant");
+        return;
+      }
+      const existing = allExistingContestants.find(c => c.id === selectedId);
+      if (!existing) {
+        alert("Selected contestant not found");
+        return;
+      }
+      name = existing.name;
+      surname = existing.surname;
+      picture = existing.picture;
+    } else {
+      // Adding new contestant or editing
+      const contestant = newContestant[categoryId];
+      if (!contestant || !contestant.name || !contestant.surname) {
+        alert("Please fill in name and surname");
+        return;
+      }
+      name = contestant.name;
+      surname = contestant.surname;
+      picture = contestant.picture || null;
     }
 
-    const isEditing = editingContestant[categoryId];
     const url = isEditing 
       ? `/api/contestants/${isEditing}` 
       : `/api/categories/${categoryId}/contestants`;
@@ -166,9 +207,9 @@ export default function AdminDashboard() {
         method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name: contestant.name,
-          surname: contestant.surname,
-          picture: contestant.picture || null,
+          name,
+          surname,
+          picture,
         }),
       });
 
@@ -177,7 +218,10 @@ export default function AdminDashboard() {
         setContestantImagePreview(prev => ({ ...prev, [categoryId]: "" }));
         setShowContestantForm(prev => ({ ...prev, [categoryId]: false }));
         setEditingContestant(prev => ({ ...prev, [categoryId]: null }));
+        setContestantMode(prev => ({ ...prev, [categoryId]: "new" }));
+        setSelectedExistingContestant(prev => ({ ...prev, [categoryId]: "" }));
         fetchContestants(categoryId);
+        fetchAllContestants(); // Refresh the list
       } else {
         alert(isEditing ? "Failed to update contestant" : "Failed to add contestant");
       }
@@ -206,6 +250,10 @@ export default function AdminDashboard() {
     setContestantImagePreview(prev => ({ ...prev, [categoryId]: "" }));
     setShowContestantForm(prev => ({ ...prev, [categoryId]: false }));
     setEditingContestant(prev => ({ ...prev, [categoryId]: null }));
+    setContestantMode(prev => ({ ...prev, [categoryId]: "new" }));
+    setSelectedExistingContestant(prev => ({ ...prev, [categoryId]: "" }));
+    setContestantMode(prev => ({ ...prev, [categoryId]: "new" }));
+    setSelectedExistingContestant(prev => ({ ...prev, [categoryId]: "" }));
   };
 
   const handleDeleteContestant = async (contestantId: string, categoryId: string) => {
@@ -776,7 +824,7 @@ export default function AdminDashboard() {
                           <form onSubmit={(e) => handleAddContestant(category.id, e)} className="mb-4 p-3 sm:p-4 glass rounded-lg">
                             <div className="flex items-center justify-between mb-4">
                               <h4 className="text-lg font-bold text-gray-800">
-                                {editingContestant[category.id] ? "Edit Contestant" : "Add New Contestant"}
+                                {editingContestant[category.id] ? "Edit Contestant" : "Add Contestant"}
                               </h4>
                               <button
                                 type="button"
@@ -786,6 +834,95 @@ export default function AdminDashboard() {
                                 <FaTimes />
                               </button>
                             </div>
+
+                            {/* Mode Selection: Only show when adding (not editing) */}
+                            {!editingContestant[category.id] && (
+                              <div className="mb-4 p-3 bg-indigo-50 rounded-lg">
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                  Choose Option:
+                                </label>
+                                <div className="flex gap-4">
+                                  <label className="flex items-center gap-2 cursor-pointer">
+                                    <input
+                                      type="radio"
+                                      name={`mode-${category.id}`}
+                                      value="new"
+                                      checked={(contestantMode[category.id] || "new") === "new"}
+                                      onChange={() => {
+                                        setContestantMode(prev => ({ ...prev, [category.id]: "new" }));
+                                        setSelectedExistingContestant(prev => ({ ...prev, [category.id]: "" }));
+                                      }}
+                                      className="text-indigo-600"
+                                    />
+                                    <span className="text-sm">Add New Contestant</span>
+                                  </label>
+                                  <label className="flex items-center gap-2 cursor-pointer">
+                                    <input
+                                      type="radio"
+                                      name={`mode-${category.id}`}
+                                      value="existing"
+                                      checked={contestantMode[category.id] === "existing"}
+                                      onChange={() => {
+                                        setContestantMode(prev => ({ ...prev, [category.id]: "existing" }));
+                                        setNewContestant(prev => ({ ...prev, [category.id]: { name: "", surname: "", picture: "" } }));
+                                        setContestantImagePreview(prev => ({ ...prev, [category.id]: "" }));
+                                      }}
+                                      className="text-indigo-600"
+                                    />
+                                    <span className="text-sm">Select Existing Contestant</span>
+                                  </label>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Select Existing Contestant */}
+                            {(contestantMode[category.id] === "existing" && !editingContestant[category.id]) ? (
+                              <div className="space-y-4">
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Select Contestant *
+                                  </label>
+                                  <select
+                                    value={selectedExistingContestant[category.id] || ""}
+                                    onChange={(e) => setSelectedExistingContestant(prev => ({ ...prev, [category.id]: e.target.value }))}
+                                    required
+                                    className="w-full px-3 py-2 glass-card border-0 rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm"
+                                  >
+                                    <option value="">-- Select a contestant --</option>
+                                    {allExistingContestants.map((contestant) => (
+                                      <option key={contestant.id} value={contestant.id}>
+                                        {contestant.name} {contestant.surname} {contestant.categories && contestant.categories.length > 0 && `(${contestant.categories.join(", ")})`}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </div>
+                                {selectedExistingContestant[category.id] && (
+                                  <div className="p-3 bg-gray-50 rounded-lg">
+                                    {(() => {
+                                      const selected = allExistingContestants.find(c => c.id === selectedExistingContestant[category.id]);
+                                      return selected ? (
+                                        <div className="flex items-center gap-3">
+                                          {selected.picture && (
+                                            <img
+                                              src={selected.picture}
+                                              alt={`${selected.name} ${selected.surname}`}
+                                              className="w-16 h-16 object-cover rounded-lg border-2 border-indigo-300"
+                                            />
+                                          )}
+                                          <div>
+                                            <p className="font-semibold text-gray-800">{selected.name} {selected.surname}</p>
+                                            {selected.categories && selected.categories.length > 0 && (
+                                              <p className="text-xs text-gray-600">Already in: {selected.categories.join(", ")}</p>
+                                            )}
+                                          </div>
+                                        </div>
+                                      ) : null;
+                                    })()}
+                                  </div>
+                                )}
+                              </div>
+                            ) : (
+                            /* Add New Contestant Form */
                             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
                               <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -877,6 +1014,7 @@ export default function AdminDashboard() {
                                 )}
                               </div>
                             </div>
+                            )}
                             <button
                               type="submit"
                               className="mt-3 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors flex items-center gap-2 text-sm"
