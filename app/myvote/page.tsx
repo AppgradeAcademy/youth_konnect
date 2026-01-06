@@ -319,7 +319,19 @@ export default function MyVote() {
                           </div>
                         )}
                         <div className="flex-1 min-w-0">
-                          <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-4">
+                          <h3 
+                            className={`text-lg sm:text-xl font-bold text-gray-800 mb-4 ${
+                              contestant.picture ? 'cursor-pointer hover:text-[#DC143C] transition-colors' : ''
+                            }`}
+                            onClick={() => {
+                              if (contestant.picture) {
+                                setSelectedImage({ 
+                                  url: contestant.picture, 
+                                  alt: `${contestant.name} ${contestant.surname}` 
+                                });
+                              }
+                            }}
+                          >
                             {contestant.name} {contestant.surname}
                           </h3>
                           {user ? (

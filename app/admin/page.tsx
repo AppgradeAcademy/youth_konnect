@@ -788,7 +788,19 @@ export default function AdminDashboard() {
                                   </div>
                                 )}
                                 <div className="flex-1 min-w-0">
-                                  <h5 className="font-semibold text-gray-800 truncate">
+                                  <h5 
+                                    className={`font-semibold text-gray-800 truncate ${
+                                      contestant.picture ? 'cursor-pointer hover:text-indigo-600 transition-colors' : ''
+                                    }`}
+                                    onClick={() => {
+                                      if (contestant.picture) {
+                                        setSelectedImage({ 
+                                          url: contestant.picture, 
+                                          alt: `${contestant.name} ${contestant.surname}` 
+                                        });
+                                      }
+                                    }}
+                                  >
                                     {contestant.name} {contestant.surname}
                                   </h5>
                                   <div className="flex gap-2 mt-2">
@@ -1048,7 +1060,19 @@ export default function AdminDashboard() {
                                     </div>
                                   )}
                                   <div className="flex-1 min-w-0">
-                                    <h5 className="text-lg font-bold text-gray-800 mb-2">
+                                    <h5 
+                                      className={`text-lg font-bold text-gray-800 mb-2 ${
+                                        contestant.picture ? 'cursor-pointer hover:text-indigo-600 transition-colors' : ''
+                                      }`}
+                                      onClick={() => {
+                                        if (contestant.picture) {
+                                          setSelectedImage({ 
+                                            url: contestant.picture, 
+                                            alt: `${contestant.name} ${contestant.surname}` 
+                                          });
+                                        }
+                                      }}
+                                    >
                                       {contestant.name} {contestant.surname}
                                     </h5>
                                     <div className="mb-2">
