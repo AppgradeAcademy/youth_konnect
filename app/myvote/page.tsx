@@ -261,7 +261,21 @@ export default function MyVote() {
               </div>
             )}
 
-            {contestants.length === 0 ? (
+            {loadingContestants && contestants.length === 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {[1, 2, 3, 4].map((i) => (
+                  <div key={i} className="instagram-card p-5 animate-pulse">
+                    <div className="flex gap-3 sm:gap-4">
+                      <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gray-200 rounded-lg flex-shrink-0"></div>
+                      <div className="flex-1 min-w-0 space-y-3">
+                        <div className="h-5 bg-gray-200 rounded w-3/4"></div>
+                        <div className="h-10 bg-gray-200 rounded"></div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : contestants.length === 0 && !loadingContestants ? (
               <div className="text-center py-12 text-gray-500">
                 <FaUserCircle className="text-6xl mx-auto mb-4 opacity-50" />
                 <p className="text-xl">No contestants in this category yet.</p>
