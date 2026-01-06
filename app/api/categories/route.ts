@@ -18,10 +18,14 @@ export async function GET(request: NextRequest) {
     });
 
     return NextResponse.json(categories);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error fetching categories:', error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { 
+        error: 'Internal server error',
+        message: process.env.NODE_ENV === 'development' ? error?.message : undefined,
+        details: process.env.NODE_ENV === 'development' ? error?.stack : undefined
+      },
       { status: 500 }
     );
   }
