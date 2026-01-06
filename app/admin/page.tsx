@@ -52,6 +52,7 @@ export default function AdminDashboard() {
   const [editingContestant, setEditingContestant] = useState<Record<string, string | null>>({}); // categoryId -> contestantId
   const [uploadingImage, setUploadingImage] = useState<Record<string, boolean>>({});
   const [contestantImagePreview, setContestantImagePreview] = useState<Record<string, string>>({});
+  const [loadingContestants, setLoadingContestants] = useState<Record<string, boolean>>({});
   const [events, setEvents] = useState<Event[]>([]);
   const [showEventForm, setShowEventForm] = useState(false);
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
@@ -116,12 +117,15 @@ export default function AdminDashboard() {
   };
 
   const fetchContestants = async (categoryId: string) => {
+    setLoadingContestants(prev => ({ ...prev, [categoryId]: true }));
     try {
       const response = await fetch(`/api/categories/${categoryId}/contestants`);
       const data = await response.json();
       setContestants(prev => ({ ...prev, [categoryId]: data }));
     } catch (error) {
       console.error("Error fetching contestants:", error);
+    } finally {
+      setLoadingContestants(prev => ({ ...prev, [categoryId]: false }));
     }
   };
 
@@ -988,7 +992,22 @@ export default function AdminDashboard() {
                         </div>
                       </div>
 
-                      {categoryContestants.length === 0 ? (
+                      {loadingContestants[category.id] ? (
+                        <div className="space-y-4">
+                          {[1, 2, 3].map((i) => (
+                            <div key={i} className="border border-gray-200 rounded-lg p-4 animate-pulse">
+                              <div className="flex items-start gap-4">
+                                <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gray-200 rounded-lg flex-shrink-0"></div>
+                                <div className="flex-1 min-w-0 space-y-3">
+                                  <div className="h-5 bg-gray-200 rounded w-2/3"></div>
+                                  <div className="h-3 bg-gray-200 rounded w-1/4"></div>
+                                  <div className="h-2 bg-gray-200 rounded w-full"></div>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : categoryContestants.length === 0 ? (
                         <div className="text-center py-8 text-gray-500">
                           <FaUserCircle className="text-4xl mx-auto mb-2 opacity-50" />
                           <p>No contestants in this category.</p>

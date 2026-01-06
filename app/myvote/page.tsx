@@ -33,6 +33,7 @@ export default function MyVote() {
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [loadingContestants, setLoadingContestants] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
   const [newCategoryDesc, setNewCategoryDesc] = useState("");
   const [showAddForm, setShowAddForm] = useState(false);
@@ -60,12 +61,15 @@ export default function MyVote() {
   };
 
   const fetchContestants = async (categoryId: string) => {
+    setLoadingContestants(true);
     try {
       const response = await fetch(`/api/categories/${categoryId}/contestants`);
       const data = await response.json();
       setContestants(data);
     } catch (error) {
       console.error("Error fetching contestants:", error);
+    } finally {
+      setLoadingContestants(false);
     }
   };
 
