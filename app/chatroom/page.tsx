@@ -206,36 +206,36 @@ export default function Chatroom() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <div className="instagram-card p-6 mb-6">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <FaComments className="text-4xl text-[#DC143C]" />
-            <h1 className="text-4xl font-bold text-gray-900">Chatroom</h1>
+    <div className="max-w-4xl mx-auto px-4 sm:px-6">
+      <div className="instagram-card p-4 sm:p-6 mb-4 sm:mb-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4 sm:mb-6">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <FaComments className="text-3xl sm:text-4xl text-[#DC143C]" />
+            <h1 className="text-3xl sm:text-4xl font-bold text-gray-900">Chatroom</h1>
           </div>
           
           {/* Username Settings */}
-          <div className="flex items-center gap-3">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
             {!showUsernameEdit ? (
               <>
-                <span className="text-sm text-gray-600">
+                <span className="text-xs sm:text-sm text-gray-600">
                   Chat as: <strong>{user?.username || user?.name}</strong>
                 </span>
                 <button
                   onClick={() => setShowUsernameEdit(true)}
-                  className="text-sm text-[#DC143C] hover:text-[#B8122E] flex items-center gap-1"
+                  className="text-xs sm:text-sm text-[#DC143C] hover:text-[#B8122E] flex items-center gap-1"
                 >
                   <FaEdit className="text-xs" /> Edit
                 </button>
               </>
             ) : (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 w-full sm:w-auto">
                 <input
                   type="text"
                   value={newUsername}
                   onChange={(e) => setNewUsername(e.target.value)}
                   placeholder="Username (optional)"
-                  className="px-3 py-1 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#DC143C] focus:border-[#DC143C]"
+                  className="flex-1 sm:flex-initial px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#DC143C] focus:border-[#DC143C]"
                   disabled={editingUsername}
                 />
                 <button
@@ -285,8 +285,8 @@ export default function Chatroom() {
 
         {/* Chat Tab */}
         {activeTab === "chat" && (
-          <div className="flex flex-col h-[600px]">
-            <div className="flex-1 overflow-y-auto mb-4 space-y-6">
+          <div className="flex flex-col h-[400px] sm:h-[500px] md:h-[600px]">
+            <div className="flex-1 overflow-y-auto mb-4 space-y-4 sm:space-y-6">
               {messages.length === 0 ? (
                 <div className="text-center text-gray-500 py-12">
                   <FaComments className="text-4xl mx-auto mb-2 opacity-50" />
@@ -299,29 +299,29 @@ export default function Chatroom() {
                     className="instagram-card"
                   >
                     {/* Header - User info */}
-                    <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#DC143C] to-[#003F7F] flex items-center justify-center text-white font-semibold">
+                    <div className="flex items-center justify-between px-3 sm:px-4 py-2 sm:py-3 border-b border-gray-200">
+                      <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-[#DC143C] to-[#003F7F] flex items-center justify-center text-white font-semibold flex-shrink-0 text-sm sm:text-base">
                           {(displayName(message.user).charAt(0)).toUpperCase()}
                         </div>
-                        <div>
-                          <span className="font-semibold text-gray-900 block">
+                        <div className="min-w-0 flex-1">
+                          <span className="font-semibold text-sm sm:text-base text-gray-900 block truncate">
                             {displayName(message.user)}
                           </span>
                         </div>
                       </div>
-                      <span className="text-xs text-gray-400">
+                      <span className="text-xs text-gray-400 flex-shrink-0 ml-2">
                         {formatDate(message.createdAt)}
                       </span>
                     </div>
                     
                     {/* Content */}
-                    <div className="px-4 py-4">
-                      <p className="text-gray-900 whitespace-pre-wrap break-words">{message.content}</p>
+                    <div className="px-3 sm:px-4 py-3 sm:py-4">
+                      <p className="text-sm sm:text-base text-gray-900 whitespace-pre-wrap break-words">{message.content}</p>
                     </div>
                     
                     {/* Footer - Like/Comment area (Instagram style) */}
-                    <div className="px-4 py-3 border-t border-gray-100">
+                    <div className="px-3 sm:px-4 py-2 sm:py-3 border-t border-gray-100">
                       <div className="flex items-center gap-4 text-gray-600">
                         <span className="text-sm font-semibold">
                           {message.user.id === user?.id ? "You" : displayName(message.user)}
@@ -340,13 +340,13 @@ export default function Chatroom() {
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
                 placeholder="Type your message..."
-                className="flex-1 px-4 py-3 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#DC143C] focus:border-[#DC143C]"
+                className="flex-1 px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#DC143C] focus:border-[#DC143C]"
               />
               <button
                 type="submit"
-                className="bg-[#DC143C] text-white px-6 py-3 rounded-lg font-semibold hover:bg-[#B8122E] transition-colors flex items-center gap-2"
+                className="bg-[#DC143C] text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg font-semibold hover:bg-[#B8122E] transition-colors flex items-center gap-2 text-sm sm:text-base"
               >
-                <FaPaperPlane /> Send
+                <FaPaperPlane className="text-sm" /> <span className="hidden sm:inline">Send</span>
               </button>
             </form>
           </div>
@@ -357,9 +357,9 @@ export default function Chatroom() {
           <div>
             <form
               onSubmit={handleSubmitQuestion}
-              className="mb-6 p-6 instagram-card"
+              className="mb-4 sm:mb-6 p-4 sm:p-6 instagram-card"
             >
-              <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+              <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
                 <FaQuestionCircle className="text-[#DC143C]" /> Ask a Question
               </h2>
               <div className="space-y-4">
@@ -411,17 +411,17 @@ export default function Chatroom() {
                 questions.map((question) => (
                   <div
                     key={question.id}
-                    className="instagram-card p-6"
+                    className="instagram-card p-4 sm:p-6"
                   >
-                    <div className="flex justify-between items-start mb-2">
-                      <h3 className="text-xl font-bold text-gray-900">
+                    <div className="flex justify-between items-start mb-2 gap-2">
+                      <h3 className="text-lg sm:text-xl font-bold text-gray-900 flex-1">
                         {question.title}
                       </h3>
-                      <span className="text-xs text-gray-500">
+                      <span className="text-xs text-gray-500 flex-shrink-0">
                         {formatDate(question.createdAt)}
                       </span>
                     </div>
-                    <p className="text-gray-600 mb-3">{question.content}</p>
+                    <p className="text-sm sm:text-base text-gray-600 mb-3">{question.content}</p>
                     <p className="text-sm text-gray-500 flex items-center gap-2">
                       <FaUser /> Asked by:{" "}
                       {question.user ? (

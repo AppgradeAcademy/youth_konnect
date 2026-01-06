@@ -169,20 +169,20 @@ export default function MyVote() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <div className="instagram-card p-6 mb-6">
-        <div className="flex justify-between items-center mb-6">
-          <div className="flex items-center gap-3">
-            <FaVoteYea className="text-4xl text-[#DC143C]" />
-            <h1 className="text-4xl font-bold text-gray-800">MyVote</h1>
+    <div className="max-w-4xl mx-auto px-4 sm:px-6">
+      <div className="instagram-card p-4 sm:p-6 mb-4 sm:mb-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4 sm:mb-6">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <FaVoteYea className="text-3xl sm:text-4xl text-[#DC143C]" />
+            <h1 className="text-3xl sm:text-4xl font-bold text-gray-800">MyVote</h1>
           </div>
           {user?.role === "admin" && !selectedCategory && (
             <button
               onClick={() => setShowAddForm(!showAddForm)}
-              className="bg-[#DC143C] text-white px-4 py-2 rounded-lg hover:bg-[#B8122E] transition-colors flex items-center gap-2 font-semibold"
+              className="bg-[#DC143C] text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-[#B8122E] transition-colors flex items-center gap-2 font-semibold text-sm sm:text-base"
             >
               {showAddForm ? <FaTimes /> : <FaPlus />}
-              {showAddForm ? "Cancel" : "Add Category"}
+              <span className="whitespace-nowrap">{showAddForm ? "Cancel" : "Add Category"}</span>
             </button>
           )}
         </div>
@@ -206,8 +206,8 @@ export default function MyVote() {
         )}
 
         {showAddForm && user?.role === "admin" && (
-          <form onSubmit={handleAddCategory} className="mb-6 p-6 instagram-card">
-            <h2 className="text-xl font-bold text-gray-800 mb-4">Add New Category</h2>
+          <form onSubmit={handleAddCategory} className="mb-4 sm:mb-6 p-4 sm:p-6 instagram-card">
+            <h2 className="text-lg sm:text-xl font-bold text-gray-800 mb-4">Add New Category</h2>
             <div className="space-y-4">
               <input
                 type="text"
@@ -243,9 +243,9 @@ export default function MyVote() {
               <FaArrowLeft /> Back to Categories
             </button>
 
-            <h2 className="text-3xl font-bold text-gray-800 mb-4">{selectedCategory.name}</h2>
+            <h2 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-4">{selectedCategory.name}</h2>
             {selectedCategory.description && (
-              <p className="text-gray-600 mb-6">{selectedCategory.description}</p>
+              <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6">{selectedCategory.description}</p>
             )}
 
             {!user && (
@@ -276,13 +276,13 @@ export default function MyVote() {
                           : "hover:border-[#DC143C]/50"
                       }`}
                     >
-                      <div className="flex gap-4">
+                      <div className="flex gap-3 sm:gap-4">
                         {contestant.picture && (
                           <div className="flex-shrink-0">
                             <img
                               src={contestant.picture}
                               alt={`${contestant.name} ${contestant.surname}`}
-                              className="w-20 h-20 object-cover rounded-lg"
+                              className="w-16 h-16 sm:w-20 sm:h-20 object-cover rounded-lg"
                               onError={(e) => {
                                 (e.target as HTMLImageElement).style.display = 'none';
                               }}
@@ -290,12 +290,12 @@ export default function MyVote() {
                           </div>
                         )}
                         {!contestant.picture && (
-                          <div className="w-20 h-20 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                            <FaUserCircle className="text-3xl text-gray-400" />
+                          <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                            <FaUserCircle className="text-2xl sm:text-3xl text-gray-400" />
                           </div>
                         )}
-                        <div className="flex-1">
-                          <h3 className="text-xl font-bold text-gray-800 mb-1">
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-1">
                             {contestant.name} {contestant.surname}
                           </h3>
                           <p className="text-sm text-gray-500 flex items-center gap-2 mb-4">
@@ -354,23 +354,23 @@ export default function MyVote() {
                     onClick={() => handleCategoryClick(category)}
                     className="instagram-card p-5 cursor-pointer hover:shadow-md transition-all"
                   >
-                    <div className="flex gap-4">
+                    <div className="flex gap-3 sm:gap-4">
                       {category.imageUrl && (
                         <div className="flex-shrink-0">
                           <img
                             src={category.imageUrl}
                             alt={category.name}
-                            className="w-24 h-24 object-cover rounded-lg"
+                            className="w-20 h-20 sm:w-24 sm:h-24 object-cover rounded-lg"
                             onError={(e) => {
                               (e.target as HTMLImageElement).style.display = 'none';
                             }}
                           />
                         </div>
                       )}
-                      <div className="flex-1">
-                        <h3 className="text-2xl font-bold text-gray-800 mb-2">{category.name}</h3>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-xl sm:text-2xl font-bold text-gray-800 mb-2">{category.name}</h3>
                         {category.description && (
-                          <p className="text-gray-600 mb-3">{category.description}</p>
+                          <p className="text-sm sm:text-base text-gray-600 mb-3">{category.description}</p>
                         )}
                         <p className="text-sm text-gray-500 flex items-center gap-2">
                           <FaVoteYea /> {category._count.votes} vote{category._count.votes !== 1 ? "s" : ""}

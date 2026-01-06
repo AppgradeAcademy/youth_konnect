@@ -42,11 +42,11 @@ export default function Login() {
   };
 
   return (
-    <div className="max-w-md mx-auto mt-12">
-      <div className="glass-card rounded-2xl p-8">
+    <div className="max-w-md mx-auto mt-6 sm:mt-12 px-4">
+      <div className="glass-card rounded-2xl p-6 sm:p-8">
         <div className="flex items-center gap-3 mb-6 justify-center">
-          <FaSignInAlt className="text-3xl text-indigo-600" />
-          <h1 className="text-3xl font-bold text-gray-800">Login</h1>
+          <FaSignInAlt className="text-2xl sm:text-3xl text-indigo-600" />
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">Login</h1>
         </div>
         
         {error && (

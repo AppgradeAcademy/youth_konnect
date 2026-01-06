@@ -96,3 +96,4 @@ All pages should return:
 - **Content-Type**: text/html
 - **Title**: "Youth Connect - AFM Rzeszow" (for home page)
 
+

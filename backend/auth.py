@@ -25,3 +25,4 @@ def create_user(db: Session, user: UserCreate, role: str = "user"):
     db.refresh(db_user)
     return db_user
 
+

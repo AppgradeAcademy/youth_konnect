@@ -19,3 +19,4 @@ DATABASE_URL="postgresql://rzeszow_youth_user:gVIAC8suj2kw14bObW3Ws2rUFRTrtojn@d
 
 The `.env` file is already in `.gitignore`, so it won't be committed to version control.
 
+

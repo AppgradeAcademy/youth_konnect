@@ -285,27 +285,27 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto">
-      <div className="glass-card rounded-2xl p-8">
-        <div className="flex justify-between items-center mb-6">
-          <div className="flex items-center gap-3">
-            <FaChartBar className="text-4xl text-indigo-600" />
+    <div className="max-w-6xl mx-auto px-4 sm:px-6">
+      <div className="glass-card rounded-2xl p-4 sm:p-6 md:p-8">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4 sm:mb-6">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <FaChartBar className="text-3xl sm:text-4xl text-indigo-600" />
             <div>
-              <h1 className="text-4xl font-bold text-gray-800">Admin Dashboard</h1>
-              <p className="text-gray-600">Manage nominations and voting</p>
+              <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-800">Admin Dashboard</h1>
+              <p className="text-sm sm:text-base text-gray-600">Manage nominations and voting</p>
             </div>
           </div>
           <button
             onClick={handleLogout}
-            className="glass bg-red-600 text-white px-4 py-2 rounded-xl hover:bg-red-700 transition-colors"
+            className="glass bg-red-600 text-white px-4 py-2 rounded-xl hover:bg-red-700 transition-colors text-sm sm:text-base"
           >
             Logout
           </button>
         </div>
 
         {/* Add New Category Form */}
-        <div className="mb-8 p-6 glass rounded-xl">
-          <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+        <div className="mb-6 sm:mb-8 p-4 sm:p-6 glass rounded-xl">
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-4 flex items-center gap-2">
             <FaPlus /> Add New Nomination/Category
           </h2>
           <form onSubmit={handleAddCategory} className="space-y-4">
@@ -361,43 +361,43 @@ export default function AdminDashboard() {
 
         {/* Categories List */}
         <div>
-          <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-4 flex items-center gap-2">
             <FaVoteYea /> Current Categories/Nominations ({categories.length})
           </h2>
           
           {categories.length === 0 ? (
-            <div className="text-center py-12 text-gray-500">
-              <FaVoteYea className="text-6xl mx-auto mb-4 opacity-50" />
-              <p className="text-xl">No categories yet. Add your first one above!</p>
+            <div className="text-center py-8 sm:py-12 text-gray-500">
+              <FaVoteYea className="text-5xl sm:text-6xl mx-auto mb-4 opacity-50" />
+              <p className="text-lg sm:text-xl">No categories yet. Add your first one above!</p>
             </div>
           ) : (
             <div className="space-y-4">
               {categories.map((category) => (
                 <div
                   key={category.id}
-                  className="glass-card rounded-xl p-6 border border-gray-200"
+                  className="glass-card rounded-xl p-4 sm:p-6 border border-gray-200"
                 >
-                  <div className="flex gap-4">
+                  <div className="flex flex-col sm:flex-row gap-4">
                     {category.imageUrl && (
                       <div className="flex-shrink-0">
                         <img
                           src={category.imageUrl}
                           alt={category.name}
-                          className="w-32 h-32 object-cover rounded-lg"
+                          className="w-full sm:w-32 h-32 object-cover rounded-lg"
                           onError={(e) => {
                             (e.target as HTMLImageElement).style.display = 'none';
                           }}
                         />
                       </div>
                     )}
-                    <div className="flex-1">
-                      <div className="flex justify-between items-start mb-2">
-                        <div className="flex items-center gap-3">
-                          <h3 className="text-2xl font-bold text-gray-800">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-2">
+                        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                          <h3 className="text-xl sm:text-2xl font-bold text-gray-800">
                             {category.name}
                           </h3>
                           <span
-                            className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                            className={`px-2 sm:px-3 py-1 rounded-full text-xs font-semibold ${
                               category.isActive
                                 ? "bg-green-100 text-green-800"
                                 : "bg-gray-100 text-gray-800"
@@ -408,9 +408,9 @@ export default function AdminDashboard() {
                         </div>
                       </div>
                       {category.description && (
-                        <p className="text-gray-600 mb-3">{category.description}</p>
+                        <p className="text-sm sm:text-base text-gray-600 mb-3">{category.description}</p>
                       )}
-                      <div className="flex items-center gap-4 text-sm text-gray-500 mb-4">
+                      <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-xs sm:text-sm text-gray-500 mb-4">
                         <span className="flex items-center gap-2">
                           <FaVoteYea /> {category._count.votes} votes
                         </span>
@@ -418,10 +418,10 @@ export default function AdminDashboard() {
                           Created: {new Date(category.createdAt).toLocaleDateString()}
                         </span>
                       </div>
-                      <div className="flex gap-2 mb-4">
+                      <div className="flex flex-wrap gap-2 mb-4">
                         <button
                           onClick={() => handleToggleActive(category)}
-                          className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
+                          className={`px-3 sm:px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
                             category.isActive
                               ? "bg-yellow-100 text-yellow-800 hover:bg-yellow-200"
                               : "bg-green-100 text-green-800 hover:bg-green-200"
@@ -431,21 +431,21 @@ export default function AdminDashboard() {
                         </button>
                         <button
                           onClick={() => handleDeleteCategory(category.id)}
-                          className="bg-red-100 text-red-800 px-4 py-2 rounded-lg hover:bg-red-200 transition-colors flex items-center gap-2"
+                          className="bg-red-100 text-red-800 px-3 sm:px-4 py-2 rounded-lg hover:bg-red-200 transition-colors flex items-center gap-2 text-sm"
                         >
                           <FaTrash /> Delete
                         </button>
                       </div>
 
                       {/* Contestants Section */}
-                      <div className="mt-6 pt-6 border-t border-gray-200">
-                        <div className="flex justify-between items-center mb-4">
-                          <h4 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                      <div className="mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-gray-200">
+                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
+                          <h4 className="text-base sm:text-lg font-bold text-gray-800 flex items-center gap-2">
                             <FaUserCircle /> Contestants ({contestants[category.id]?.length || 0})
                           </h4>
                           <button
                             onClick={() => setShowContestantForm(prev => ({ ...prev, [category.id]: !prev[category.id] }))}
-                            className="bg-indigo-100 text-indigo-700 px-4 py-2 rounded-lg hover:bg-indigo-200 transition-colors flex items-center gap-2 text-sm"
+                            className="bg-indigo-100 text-indigo-700 px-3 sm:px-4 py-2 rounded-lg hover:bg-indigo-200 transition-colors flex items-center gap-2 text-xs sm:text-sm w-full sm:w-auto justify-center"
                           >
                             <FaPlus /> {showContestantForm[category.id] ? "Cancel" : "Add Contestant"}
                           </button>
@@ -453,8 +453,8 @@ export default function AdminDashboard() {
 
                         {/* Add Contestant Form */}
                         {showContestantForm[category.id] && (
-                          <form onSubmit={(e) => handleAddContestant(category.id, e)} className="mb-4 p-4 glass rounded-lg">
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <form onSubmit={(e) => handleAddContestant(category.id, e)} className="mb-4 p-3 sm:p-4 glass rounded-lg">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
                               <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
                                   Name *
