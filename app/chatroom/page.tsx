@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { FaComments, FaQuestionCircle, FaPaperPlane, FaUser, FaEdit, FaUserSecret, FaCheck, FaTimes, FaTag, FaReply } from "react-icons/fa";
 import { useToast } from "@/contexts/ToastContext";
+import { useNotifications } from "@/contexts/NotificationContext";
 
 interface Message {
   id: string;
@@ -65,6 +66,7 @@ export default function Chatroom() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const { showToast } = useToast();
+  const { addNotification } = useNotifications();
 
   useEffect(() => {
     const userData = localStorage.getItem("user");
@@ -208,6 +210,7 @@ export default function Chatroom() {
       });
 
       if (response.ok) {
+        const questionData = await response.json();
         setNewQuestionTitle("");
         setNewQuestionContent("");
         setNewQuestionTags("");
@@ -215,6 +218,16 @@ export default function Chatroom() {
         fetchQuestions();
         setActiveTab("questions");
         showToast("Question submitted successfully!", "success");
+        
+        // Add notification for the new question
+        addNotification({
+          type: "question",
+          title: questionData.title,
+          message: isQuestionAnonymous 
+            ? "An anonymous question was posted" 
+            : `${user.name} posted a question`,
+          link: "/chatroom?tab=questions",
+        });
       } else {
         showToast("Failed to submit question", "error");
       }
