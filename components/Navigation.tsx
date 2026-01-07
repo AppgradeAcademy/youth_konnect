@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, useRef } from "react";
-import { FaHome, FaVoteYea, FaComments, FaInfoCircle, FaSignInAlt, FaUser, FaSignOutAlt, FaUserShield, FaBars, FaTimes, FaBell } from "react-icons/fa";
+import { FaHome, FaVoteYea, FaComments, FaInfoCircle, FaSignInAlt, FaUser, FaSignOutAlt, FaUserShield, FaBars, FaTimes, FaBell, FaPlusCircle } from "react-icons/fa";
 import Logo from "./Logo";
 import { useNotifications } from "@/contexts/NotificationContext";
 
@@ -104,6 +104,17 @@ export default function Navigation() {
             >
               <FaComments className="text-xl" />
               <span className="hidden sm:inline">Chatroom</span>
+            </Link>
+            <Link
+              href="/create"
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+                isActive("/create") 
+                  ? "text-[#DC143C] font-semibold bg-red-50" 
+                  : "text-gray-700 hover:text-gray-900 hover:bg-gray-50"
+              }`}
+            >
+              <FaPlusCircle className="text-xl" />
+              <span className="hidden sm:inline">Post</span>
             </Link>
             <Link
               href="/about"
@@ -280,6 +291,18 @@ export default function Navigation() {
               >
                 <FaComments className="text-xl" />
                 <span>Chatroom</span>
+              </Link>
+              <Link
+                href="/create"
+                onClick={() => setMobileMenuOpen(false)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+                  isActive("/create") 
+                    ? "text-[#DC143C] font-semibold bg-red-50" 
+                    : "text-gray-700 hover:text-gray-900 hover:bg-gray-50"
+                }`}
+              >
+                <FaPlusCircle className="text-xl" />
+                <span>Post</span>
               </Link>
               <Link
                 href="/about"
