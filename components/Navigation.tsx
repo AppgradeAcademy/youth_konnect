@@ -24,10 +24,13 @@ export default function Navigation() {
     
     // Fetch notifications on mount and then every 30 seconds
     fetchNotifications();
-    const interval = setInterval(fetchNotifications, 30000);
+    const interval = setInterval(() => {
+      fetchNotifications();
+    }, 30000);
     
     return () => clearInterval(interval);
-  }, [fetchNotifications]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Close notification panel when clicking outside
   useEffect(() => {
