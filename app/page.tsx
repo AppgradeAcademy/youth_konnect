@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { FaHeart, FaComment, FaPaperPlane, FaBookmark, FaEllipsisH, FaUserCircle, FaPaperPlane as FaSend } from "react-icons/fa";
+import { FaHeart, FaComment, FaPaperPlane, FaBookmark, FaEllipsisH, FaUserCircle, FaPaperPlane as FaSend, FaEdit, FaTrash, FaTimes } from "react-icons/fa";
 import { useToast } from "@/contexts/ToastContext";
 import { useNotifications } from "@/contexts/NotificationContext";
 
@@ -45,6 +45,13 @@ export default function Home() {
   const [expandedComments, setExpandedComments] = useState<Set<string>>(new Set());
   const [newComments, setNewComments] = useState<Record<string, string>>({});
   const [postingComment, setPostingComment] = useState<Record<string, boolean>>({});
+  const [editingPost, setEditingPost] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editContent, setEditContent] = useState("");
+  const [editTags, setEditTags] = useState("");
+  const [editImageUrl, setEditImageUrl] = useState("");
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
+  const [deletingPost, setDeletingPost] = useState<string | null>(null);
 
   useEffect(() => {
     const userData = localStorage.getItem("user");
@@ -239,9 +246,58 @@ export default function Home() {
                       <p className="text-xs text-gray-500">{formatTimeAgo(post.createdAt)}</p>
                     </div>
                   </div>
-                  <button className="text-gray-600 hover:text-gray-900">
-                    <FaEllipsisH />
-                  </button>
+                  <div className="flex items-center gap-2">
+                    {!post.isAnonymous && user && post.user?.id === user.id && (
+                      <>
+                        {editingPost !== post.id ? (
+                          <>
+                            <button
+                              onClick={() => handleEditPost(post)}
+                              className="text-gray-600 hover:text-[#DC143C] transition-colors p-2"
+                              aria-label="Edit post"
+                            >
+                              <FaEdit />
+                            </button>
+                            <button
+                              onClick={() => setShowDeleteConfirm(post.id)}
+                              className="text-gray-600 hover:text-red-600 transition-colors p-2"
+                              aria-label="Delete post"
+                            >
+                              <FaTrash />
+                            </button>
+                          </>
+                        ) : (
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => handleSaveEdit(post.id)}
+                              className="text-green-600 hover:text-green-700 transition-colors p-2"
+                              aria-label="Save"
+                            >
+                              <FaPaperPlane />
+                            </button>
+                            <button
+                              onClick={() => {
+                                setEditingPost(null);
+                                setEditTitle("");
+                                setEditContent("");
+                                setEditTags("");
+                                setEditImageUrl("");
+                              }}
+                              className="text-gray-600 hover:text-gray-900 transition-colors p-2"
+                              aria-label="Cancel"
+                            >
+                              <FaTimes />
+                            </button>
+                          </div>
+                        )}
+                      </>
+                    )}
+                    {editingPost !== post.id && (
+                      <button className="text-gray-600 hover:text-gray-900">
+                        <FaEllipsisH />
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 {/* Post Image */}
@@ -286,28 +342,63 @@ export default function Home() {
                     </button>
                   )}
 
-                  {/* Post Caption */}
-                  <div className="mb-2">
-                    <p className="text-sm">
-                      <span className="font-semibold text-gray-900">
-                        {post.isAnonymous ? "Anonymous" : post.user?.name || "Unknown"}
-                      </span>
-                      <span className="text-gray-900 ml-2">{post.title}</span>
-                    </p>
-                    {post.content && (
-                      <p className="text-sm text-gray-700 mt-1">{post.content}</p>
-                    )}
-                  </div>
-
-                  {/* Tags */}
-                  {post.tags && (
-                    <div className="flex gap-2 flex-wrap mt-2 mb-2">
-                      {post.tags.split(',').map((tag: string, idx: number) => (
-                        <span key={idx} className="text-sm text-blue-600">
-                          #{tag.trim()}
-                        </span>
-                      ))}
+                  {/* Post Caption - Edit Mode or View Mode */}
+                  {editingPost === post.id ? (
+                    <div className="mb-2 space-y-3">
+                      <input
+                        type="text"
+                        value={editTitle}
+                        onChange={(e) => setEditTitle(e.target.value)}
+                        placeholder="Caption..."
+                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#DC143C] focus:border-[#DC143C]"
+                      />
+                      <textarea
+                        value={editContent}
+                        onChange={(e) => setEditContent(e.target.value)}
+                        placeholder="Description..."
+                        rows={3}
+                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#DC143C] focus:border-[#DC143C] resize-none"
+                      />
+                      <input
+                        type="text"
+                        value={editTags}
+                        onChange={(e) => setEditTags(e.target.value)}
+                        placeholder="Tags (comma-separated)"
+                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#DC143C] focus:border-[#DC143C]"
+                      />
+                      <input
+                        type="text"
+                        value={editImageUrl}
+                        onChange={(e) => setEditImageUrl(e.target.value)}
+                        placeholder="Image URL"
+                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#DC143C] focus:border-[#DC143C]"
+                      />
                     </div>
+                  ) : (
+                    <>
+                      <div className="mb-2">
+                        <p className="text-sm">
+                          <span className="font-semibold text-gray-900">
+                            {post.isAnonymous ? "Anonymous" : post.user?.name || "Unknown"}
+                          </span>
+                          <span className="text-gray-900 ml-2">{post.title}</span>
+                        </p>
+                        {post.content && (
+                          <p className="text-sm text-gray-700 mt-1">{post.content}</p>
+                        )}
+                      </div>
+
+                      {/* Tags */}
+                      {post.tags && (
+                        <div className="flex gap-2 flex-wrap mt-2 mb-2">
+                          {post.tags.split(',').map((tag: string, idx: number) => (
+                            <span key={idx} className="text-sm text-blue-600">
+                              #{tag.trim()}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </>
                   )}
 
                   {/* Comments Section */}
