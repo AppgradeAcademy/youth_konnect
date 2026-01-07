@@ -88,10 +88,22 @@ export default function Chatroom() {
     
     try {
       const response = await fetch(`/api/messages?userId=${user.id}&filter=${filter}`);
+      if (!response.ok) {
+        console.error("Failed to fetch messages:", response.status);
+        setMessages([]);
+        return;
+      }
       const data = await response.json();
-      setMessages(data);
+      // Ensure data is an array
+      if (Array.isArray(data)) {
+        setMessages(data);
+      } else {
+        console.error("Invalid messages data format:", data);
+        setMessages([]);
+      }
     } catch (error) {
       console.error("Error fetching messages:", error);
+      setMessages([]);
     }
   };
 

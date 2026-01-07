@@ -57,10 +57,22 @@ export default function Home() {
   const fetchPosts = async () => {
     try {
       const response = await fetch("/api/questions");
+      if (!response.ok) {
+        console.error("Failed to fetch posts:", response.status);
+        setPosts([]);
+        return;
+      }
       const data = await response.json();
-      setPosts(data);
+      // Ensure data is an array
+      if (Array.isArray(data)) {
+        setPosts(data);
+      } else {
+        console.error("Invalid data format:", data);
+        setPosts([]);
+      }
     } catch (error) {
       console.error("Error fetching posts:", error);
+      setPosts([]);
     } finally {
       setLoading(false);
     }
@@ -69,10 +81,19 @@ export default function Home() {
   const fetchComments = async (postId: string) => {
     try {
       const response = await fetch(`/api/questions/${postId}/answers`);
+      if (!response.ok) {
+        console.error("Failed to fetch comments:", response.status);
+        return;
+      }
       const data = await response.json();
-      setPosts(prev => prev.map(post => 
-        post.id === postId ? { ...post, answers: data } : post
-      ));
+      // Ensure data is an array
+      if (Array.isArray(data)) {
+        setPosts(prev => prev.map(post => 
+          post.id === postId ? { ...post, answers: data } : post
+        ));
+      } else {
+        console.error("Invalid comments data format:", data);
+      }
     } catch (error) {
       console.error("Error fetching comments:", error);
     }

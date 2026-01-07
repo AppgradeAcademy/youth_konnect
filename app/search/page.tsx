@@ -58,17 +58,29 @@ export default function SearchUsers() {
       );
       if (response.ok) {
         const data = await response.json();
-        setResults(data);
-        // Update following map
-        const map: Record<string, boolean> = {};
-        data.forEach((u: User) => {
-          map[u.id] = u.isFollowing || false;
-        });
-        setFollowingMap(map);
+        // Ensure data is an array
+        if (Array.isArray(data)) {
+          setResults(data);
+          // Update following map
+          const map: Record<string, boolean> = {};
+          data.forEach((u: User) => {
+            map[u.id] = u.isFollowing || false;
+          });
+          setFollowingMap(map);
+        } else {
+          console.error("Invalid search results format:", data);
+          setResults([]);
+          showToast("Invalid response from server", "error");
+        }
+      } else {
+        const errorData = await response.json().catch(() => ({ error: "Unknown error" }));
+        showToast(errorData.error || "Failed to search users", "error");
+        setResults([]);
       }
     } catch (error) {
       console.error("Error searching users:", error);
       showToast("Failed to search users", "error");
+      setResults([]);
     } finally {
       setLoading(false);
     }

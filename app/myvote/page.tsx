@@ -53,10 +53,22 @@ export default function MyVote() {
   const fetchCategories = async () => {
     try {
       const response = await fetch("/api/categories");
+      if (!response.ok) {
+        console.error("Failed to fetch categories:", response.status);
+        setCategories([]);
+        return;
+      }
       const data = await response.json();
-      setCategories(data);
+      // Ensure data is an array
+      if (Array.isArray(data)) {
+        setCategories(data);
+      } else {
+        console.error("Invalid categories data format:", data);
+        setCategories([]);
+      }
     } catch (error) {
       console.error("Error fetching categories:", error);
+      setCategories([]);
     } finally {
       setLoading(false);
     }
@@ -66,10 +78,22 @@ export default function MyVote() {
     setLoadingContestants(true);
     try {
       const response = await fetch(`/api/categories/${categoryId}/contestants`);
+      if (!response.ok) {
+        console.error("Failed to fetch contestants:", response.status);
+        setContestants([]);
+        return;
+      }
       const data = await response.json();
-      setContestants(data);
+      // Ensure data is an array
+      if (Array.isArray(data)) {
+        setContestants(data);
+      } else {
+        console.error("Invalid contestants data format:", data);
+        setContestants([]);
+      }
     } catch (error) {
       console.error("Error fetching contestants:", error);
+      setContestants([]);
     } finally {
       setLoadingContestants(false);
     }
