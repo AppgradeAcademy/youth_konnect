@@ -60,10 +60,10 @@ export default function Navigation() {
   const isActive = (path: string) => pathname === path;
 
   return (
-    <nav className="nav-clean sticky top-0 z-50 bg-white shadow-sm">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
-          <Link href="/" className="flex items-center gap-2 sm:gap-3 hover:opacity-80 transition-opacity flex-shrink-0">
+    <nav className="nav-clean sticky top-0 z-50 bg-white shadow-sm w-full">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+        <div className="flex justify-between items-center h-16 w-full">
+          <Link href="/" className="flex items-center gap-2 sm:gap-3 hover:opacity-80 transition-opacity flex-shrink-0 min-w-0">
             <Logo />
             <span className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-[#DC143C] to-[#B8122E] bg-clip-text text-transparent whitespace-nowrap">
               Youth Connect
@@ -71,7 +71,7 @@ export default function Navigation() {
           </Link>
           
           {/* Desktop Navigation */}
-          <div className="hidden md:flex gap-1 items-center">
+          <div className="hidden md:flex gap-1 items-center flex-shrink-0">
             <Link
               href="/"
               className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
