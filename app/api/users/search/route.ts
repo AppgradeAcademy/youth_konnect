@@ -12,12 +12,20 @@ export async function GET(request: NextRequest) {
       let suggestedUsers: any[] = [];
       
       if (userId) {
-        // Get users the current user is already following
-        const followingIds = await prisma.userFollow.findMany({
-          where: { followerId: userId },
-          select: { followingId: true },
-        });
-        const followingSet = new Set(followingIds.map(f => f.followingId));
+        // Get users the current user is already following (handle case where table might not exist)
+        let followingIds: any[] = [];
+        let followingSet = new Set<string>();
+        
+        try {
+          followingIds = await prisma.userFollow.findMany({
+            where: { followerId: userId },
+            select: { followingId: true },
+          });
+          followingSet = new Set(followingIds.map(f => f.followingId));
+        } catch (error: any) {
+          // If UserFollow table doesn't exist yet, just continue without filtering
+          console.warn('UserFollow table may not exist yet:', error?.message);
+        }
 
         // Get all users except current user and those already followed
         const allUsers = await prisma.user.findMany({
@@ -123,11 +131,19 @@ export async function GET(request: NextRequest) {
 
     // If userId provided, check if current user follows each user
     if (userId) {
-      const followingIds = await prisma.userFollow.findMany({
-        where: { followerId: userId },
-        select: { followingId: true },
-      });
-      const followingSet = new Set(followingIds.map(f => f.followingId));
+      let followingIds: any[] = [];
+      let followingSet = new Set<string>();
+      
+      try {
+        followingIds = await prisma.userFollow.findMany({
+          where: { followerId: userId },
+          select: { followingId: true },
+        });
+        followingSet = new Set(followingIds.map(f => f.followingId));
+      } catch (error: any) {
+        // If UserFollow table doesn't exist yet, just continue without follow status
+        console.warn('UserFollow table may not exist yet:', error?.message);
+      }
 
       const usersWithFollowStatus = users.map(user => ({
         ...user,
@@ -140,8 +156,12 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(users);
   } catch (error: any) {
     console.error('Error searching users:', error);
+    console.error('Error details:', error?.message, error?.stack);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { 
+        error: 'Internal server error',
+        message: process.env.NODE_ENV === 'development' ? error?.message : undefined
+      },
       { status: 500 }
     );
   }
