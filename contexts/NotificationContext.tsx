@@ -36,14 +36,10 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
         console.error("Error loading notifications:", error);
       }
     }
-    fetchNotifications();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Save to localStorage whenever notifications change
-  useEffect(() => {
-    localStorage.setItem("notifications", JSON.stringify(notifications));
-  }, [notifications]);
-
+  // Fetch notifications from API
   const fetchNotifications = async () => {
     try {
       // Fetch recent questions (last 10)
@@ -59,21 +55,36 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
           title: q.title,
           message: q.isAnonymous ? "An anonymous question was posted" : `${q.user?.name || "Someone"} posted a question`,
           createdAt: q.createdAt,
-          read: notifications.find(n => n.id === `question-${q.id}`)?.read || false,
+          read: false,
           link: `/chatroom?tab=questions`,
         }));
 
-        // Merge with existing notifications, avoiding duplicates
+        // Merge with existing notifications, avoiding duplicates and preserving read status
         setNotifications(prev => {
           const existingIds = new Set(prev.map(n => n.id));
+          const existingMap = new Map(prev.map(n => [n.id, n]));
+          
+          // Update existing notifications and add new ones
+          const updated = questionNotifications.map(n => {
+            const existing = existingMap.get(n.id);
+            return existing ? existing : n; // Keep existing read status
+          });
+          
+          // Add any new notifications
           const newOnes = questionNotifications.filter(n => !existingIds.has(n.id));
-          return [...newOnes, ...prev].slice(0, 50); // Keep last 50 notifications
+          
+          return [...updated, ...newOnes].slice(0, 50); // Keep last 50 notifications
         });
       }
     } catch (error) {
       console.error("Error fetching notifications:", error);
     }
   };
+
+  // Save to localStorage whenever notifications change
+  useEffect(() => {
+    localStorage.setItem("notifications", JSON.stringify(notifications));
+  }, [notifications]);
 
   const addNotification = (notification: Omit<Notification, "id" | "read" | "createdAt">) => {
     const newNotification: Notification = {
