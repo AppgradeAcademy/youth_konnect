@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { FaLock, FaUser, FaSignInAlt, FaVoteYea, FaPlus, FaTrash, FaChartBar, FaImage, FaEdit, FaUserCircle, FaCalendarAlt, FaMapMarkerAlt, FaClock, FaTimes, FaPoll, FaUsers, FaComments, FaPowerOff, FaQuestionCircle, FaCheckCircle } from "react-icons/fa";
 import ImageModal from "@/components/ImageModal";
 import Image from "next/image";
+import { useToast } from "@/contexts/ToastContext";
 
 interface Category {
   id: string;
@@ -74,6 +75,7 @@ export default function AdminDashboard() {
   const [chatroomQuestions, setChatroomQuestions] = useState<any[]>([]);
   const [chatroomStatus, setChatroomStatus] = useState(true);
   const router = useRouter();
+  const { showToast } = useToast();
 
   // Admin credentials
   const ADMIN_USERNAME = "admin";
@@ -296,8 +298,9 @@ export default function AdminDashboard() {
         setNewCategoryDesc("");
         setNewCategoryImageUrl("");
         fetchCategories();
+        showToast("Category added successfully!", "success");
       } else {
-        alert("Failed to add category");
+        showToast("Failed to add category", "error");
       }
     } catch (error) {
       console.error("Error adding category:", error);

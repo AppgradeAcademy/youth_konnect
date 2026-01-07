@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { FaComments, FaQuestionCircle, FaPaperPlane, FaUser, FaEdit, FaUserSecret, FaCheck, FaTimes, FaTag, FaReply } from "react-icons/fa";
+import { useToast } from "@/contexts/ToastContext";
 
 interface Message {
   id: string;
@@ -63,6 +64,7 @@ export default function Chatroom() {
   const [chatroomActive, setChatroomActive] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+  const { showToast } = useToast();
 
   useEffect(() => {
     const userData = localStorage.getItem("user");
@@ -212,8 +214,9 @@ export default function Chatroom() {
         setIsQuestionAnonymous(false);
         fetchQuestions();
         setActiveTab("questions");
+        showToast("Question submitted successfully!", "success");
       } else {
-        alert("Failed to submit question");
+        showToast("Failed to submit question", "error");
       }
     } catch (error) {
       console.error("Error submitting question:", error);
