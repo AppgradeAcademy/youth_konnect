@@ -182,6 +182,70 @@ export default function Home() {
     return commentUser.username || commentUser.name;
   };
 
+  const handleEditPost = (post: Post) => {
+    setEditingPost(post.id);
+    setEditTitle(post.title);
+    setEditContent(post.content);
+    setEditTags(post.tags || "");
+    setEditImageUrl(post.imageUrl || "");
+  };
+
+  const handleSaveEdit = async (postId: string) => {
+    if (!user || !editTitle.trim()) return;
+
+    try {
+      const response = await fetch(`/api/questions/${postId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: user.id,
+          title: editTitle.trim(),
+          content: editContent.trim() || editTitle.trim(),
+          tags: editTags.trim() || null,
+          imageUrl: editImageUrl || null,
+        }),
+      });
+
+      if (response.ok) {
+        const updatedPost = await response.json();
+        setPosts(prev => prev.map(p => p.id === postId ? updatedPost : p));
+        setEditingPost(null);
+        showToast("Post updated successfully!", "success");
+      } else {
+        const error = await response.json();
+        showToast(error.error || "Failed to update post", "error");
+      }
+    } catch (error) {
+      console.error("Error updating post:", error);
+      showToast("Failed to update post", "error");
+    }
+  };
+
+  const handleDeletePost = async (postId: string) => {
+    if (!user) return;
+
+    setDeletingPost(postId);
+    try {
+      const response = await fetch(`/api/questions/${postId}?userId=${user.id}`, {
+        method: "DELETE",
+      });
+
+      if (response.ok) {
+        setPosts(prev => prev.filter(p => p.id !== postId));
+        setShowDeleteConfirm(null);
+        showToast("Post deleted successfully!", "success");
+      } else {
+        const error = await response.json();
+        showToast(error.error || "Failed to delete post", "error");
+      }
+    } catch (error) {
+      console.error("Error deleting post:", error);
+      showToast("Failed to delete post", "error");
+    } finally {
+      setDeletingPost(null);
+    }
+  };
+
   if (loading) {
     return (
       <div className="max-w-2xl mx-auto px-4 py-8 text-center">
