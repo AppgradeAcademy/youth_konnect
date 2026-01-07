@@ -18,6 +18,7 @@ export default function CreatePost() {
   const [imageUrl, setImageUrl] = useState("");
   const [imagePreview, setImagePreview] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [chatroomActive, setChatroomActive] = useState(true);
 
   useEffect(() => {
@@ -42,12 +43,25 @@ export default function CreatePost() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim() || !content.trim() || !user) return;
+    
+    // Validate required fields
+    if (!title.trim()) {
+      showToast("Please enter a caption for your post", "error");
+      return;
+    }
+    
+    if (!user) {
+      showToast("Please log in to create a post", "error");
+      router.push("/login");
+      return;
+    }
+    
     if (!chatroomActive) {
       showToast("Chatroom is currently offline. Please try again later.", "error");
       return;
     }
 
+    setSubmitting(true);
     try {
       const response = await fetch("/api/questions", {
         method: "POST",
@@ -55,7 +69,7 @@ export default function CreatePost() {
         body: JSON.stringify({
           userId: user.id,
           title: title.trim(),
-          content: content.trim(),
+          content: content.trim() || title.trim(), // Use title as content if content is empty
           isAnonymous,
           tags: tags.trim() || null,
           imageUrl: imageUrl || null,
@@ -76,14 +90,26 @@ export default function CreatePost() {
           link: "/",
         });
 
+        // Clear form
+        setTitle("");
+        setContent("");
+        setTags("");
+        setIsAnonymous(false);
+        setImageUrl("");
+        setImagePreview("");
+
         // Redirect to home
         router.push("/");
       } else {
-        showToast("Failed to create post", "error");
+        const errorData = await response.json().catch(() => ({ error: "Unknown error" }));
+        showToast(errorData.error || "Failed to create post", "error");
+        console.error("Error response:", errorData);
       }
     } catch (error) {
       console.error("Error creating post:", error);
-      showToast("Failed to create post", "error");
+      showToast("Failed to create post. Please try again.", "error");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -124,7 +150,7 @@ export default function CreatePost() {
               placeholder="Add more details (optional)..."
               rows={4}
               disabled={!chatroomActive}
-              className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#DC143C] focus:border-[#DC143C] disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#DC143C] focus:border-[#DC143C] disabled:opacity-50 disabled:cursor-not-allowed resize-none"
             />
           </div>
 
@@ -222,10 +248,10 @@ export default function CreatePost() {
 
           <button
             type="submit"
-            disabled={!chatroomActive || uploading}
+            disabled={!chatroomActive || uploading || submitting}
             className="w-full bg-[#DC143C] text-white px-6 py-3 rounded-lg font-semibold hover:bg-[#B8122E] transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <FaPaperPlane /> {uploading ? "Uploading..." : "Post"}
+            <FaPaperPlane /> {submitting ? "Posting..." : uploading ? "Uploading..." : "Post"}
           </button>
         </form>
       </div>

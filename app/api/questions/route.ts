@@ -62,18 +62,21 @@ export async function POST(request: NextRequest) {
   try {
     const { userId, title, content, isAnonymous, tags, imageUrl } = await request.json();
 
-    if (!userId || !title || !content) {
+    if (!userId || !title) {
       return NextResponse.json(
-        { error: 'User ID, title, and content are required' },
+        { error: 'User ID and title are required' },
         { status: 400 }
       );
     }
+    
+    // If content is not provided, use title as content
+    const finalContent = content || title;
 
     const question = await prisma.question.create({
       data: {
         userId,
         title,
-        content,
+        content: finalContent,
         isAnonymous: isAnonymous || false,
         tags: tags || null,
         imageUrl: imageUrl || null,
