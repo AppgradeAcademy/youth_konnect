@@ -84,6 +84,7 @@ model Question {
   userId      String
   isAnonymous Boolean  @default(false)
   tags        String? // Comma-separated tags
+  imageUrl    String? // Image URL for Instagram-style posts
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

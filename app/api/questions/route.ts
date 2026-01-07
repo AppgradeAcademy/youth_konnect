@@ -5,7 +5,15 @@ import { prisma } from '@/lib/prisma';
 export async function GET() {
   try {
     const questions = await prisma.question.findMany({
-      include: {
+      select: {
+        id: true,
+        title: true,
+        content: true,
+        imageUrl: true,
+        isAnonymous: true,
+        tags: true,
+        createdAt: true,
+        updatedAt: true,
         user: {
           select: {
             id: true,
@@ -52,7 +60,7 @@ export async function GET() {
 // POST create question
 export async function POST(request: NextRequest) {
   try {
-    const { userId, title, content, isAnonymous, tags } = await request.json();
+    const { userId, title, content, isAnonymous, tags, imageUrl } = await request.json();
 
     if (!userId || !title || !content) {
       return NextResponse.json(
@@ -68,6 +76,7 @@ export async function POST(request: NextRequest) {
         content,
         isAnonymous: isAnonymous || false,
         tags: tags || null,
+        imageUrl: imageUrl || null,
       },
       include: {
         user: {

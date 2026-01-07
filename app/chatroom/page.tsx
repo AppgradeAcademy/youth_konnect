@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { FaComments, FaQuestionCircle, FaPaperPlane, FaUser, FaEdit, FaUserSecret, FaCheck, FaTimes, FaTag, FaReply } from "react-icons/fa";
+import { FaComments, FaQuestionCircle, FaPaperPlane, FaUser, FaEdit, FaUserSecret, FaCheck, FaTimes, FaTag, FaReply, FaImage } from "react-icons/fa";
 import { useToast } from "@/contexts/ToastContext";
 import { useNotifications } from "@/contexts/NotificationContext";
 
@@ -54,6 +54,9 @@ export default function Chatroom() {
   const [newQuestionContent, setNewQuestionContent] = useState("");
   const [newQuestionTags, setNewQuestionTags] = useState("");
   const [isQuestionAnonymous, setIsQuestionAnonymous] = useState(false);
+  const [questionImage, setQuestionImage] = useState<string>("");
+  const [questionImagePreview, setQuestionImagePreview] = useState<string>("");
+  const [uploadingQuestionImage, setUploadingQuestionImage] = useState(false);
   const [answeringQuestion, setAnsweringQuestion] = useState<string | null>(null);
   const [newAnswer, setNewAnswer] = useState<Record<string, string>>({});
   const [user, setUser] = useState<any>(null);
@@ -206,6 +209,7 @@ export default function Chatroom() {
           content: newQuestionContent,
           isAnonymous: isQuestionAnonymous,
           tags: newQuestionTags.trim() || null,
+          imageUrl: questionImage || null,
         }),
       });
 
@@ -215,6 +219,8 @@ export default function Chatroom() {
         setNewQuestionContent("");
         setNewQuestionTags("");
         setIsQuestionAnonymous(false);
+        setQuestionImage("");
+        setQuestionImagePreview("");
         fetchQuestions();
         setActiveTab("questions");
         showToast("Question submitted successfully!", "success");
@@ -482,6 +488,72 @@ export default function Chatroom() {
                   rows={4}
                   className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#DC143C] focus:border-[#DC143C]"
                 />
+                
+                {/* Image Upload */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                    <FaImage className="text-[#DC143C]" /> Add Image (Optional)
+                  </label>
+                  {!questionImagePreview ? (
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/jpg,image/png,image/webp"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+
+                        setUploadingQuestionImage(true);
+                        try {
+                          const formData = new FormData();
+                          formData.append('file', file);
+
+                          const response = await fetch('/api/upload/contestant', {
+                            method: 'POST',
+                            body: formData,
+                          });
+
+                          if (response.ok) {
+                            const data = await response.json();
+                            setQuestionImage(data.url);
+                            setQuestionImagePreview(data.url);
+                          } else {
+                            const error = await response.json();
+                            showToast(error.error || 'Failed to upload image', "error");
+                          }
+                        } catch (error) {
+                          console.error('Error uploading image:', error);
+                          showToast('Failed to upload image. Please try again.', "error");
+                        } finally {
+                          setUploadingQuestionImage(false);
+                        }
+                      }}
+                      className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#DC143C] focus:border-[#DC143C]"
+                      disabled={uploadingQuestionImage || !chatroomActive}
+                    />
+                  ) : (
+                    <div className="relative">
+                      <img
+                        src={questionImagePreview}
+                        alt="Preview"
+                        className="w-full max-h-64 object-cover rounded-lg border-2 border-gray-300"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setQuestionImage("");
+                          setQuestionImagePreview("");
+                        }}
+                        className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-2 hover:bg-red-600 transition-colors"
+                      >
+                        <FaTimes />
+                      </button>
+                    </div>
+                  )}
+                  {uploadingQuestionImage && (
+                    <p className="text-xs text-gray-500 mt-1">Uploading image...</p>
+                  )}
+                </div>
+
                 <input
                   type="text"
                   value={newQuestionTags}
