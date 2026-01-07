@@ -64,6 +64,9 @@ export default function AdminDashboard() {
   const [newEventDate, setNewEventDate] = useState("");
   const [newEventTime, setNewEventTime] = useState("");
   const [newEventPlace, setNewEventPlace] = useState("");
+  const [editingCategory, setEditingCategory] = useState<string | null>(null);
+  const [editCategoryName, setEditCategoryName] = useState("");
+  const [editCategoryDesc, setEditCategoryDesc] = useState("");
   const [activeSection, setActiveSection] = useState<"categories" | "events" | "results" | "participants" | "chatroom">("categories");
   const [selectedImage, setSelectedImage] = useState<{ url: string; alt: string } | null>(null);
   const [users, setUsers] = useState<any[]>([]);
@@ -250,8 +253,6 @@ export default function AdminDashboard() {
     setContestantImagePreview(prev => ({ ...prev, [categoryId]: "" }));
     setShowContestantForm(prev => ({ ...prev, [categoryId]: false }));
     setEditingContestant(prev => ({ ...prev, [categoryId]: null }));
-    setContestantMode(prev => ({ ...prev, [categoryId]: "new" }));
-    setSelectedExistingContestant(prev => ({ ...prev, [categoryId]: "" }));
     setContestantMode(prev => ({ ...prev, [categoryId]: "new" }));
     setSelectedExistingContestant(prev => ({ ...prev, [categoryId]: "" }));
   };
@@ -753,24 +754,78 @@ export default function AdminDashboard() {
                       </div>
                     )}
                     <div className="flex-1 min-w-0">
-                      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-2">
-                        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-                          <h3 className="text-xl sm:text-2xl font-bold text-gray-800">
-                            {category.name}
-                          </h3>
-                          <span
-                            className={`px-2 sm:px-3 py-1 rounded-full text-xs font-semibold ${
-                              category.isActive
-                                ? "bg-green-100 text-green-800"
-                                : "bg-gray-100 text-gray-800"
-                            }`}
-                          >
-                            {category.isActive ? "Active" : "Inactive"}
-                          </span>
-                        </div>
-                      </div>
-                      {category.description && (
-                        <p className="text-sm sm:text-base text-gray-600 mb-3">{category.description}</p>
+                      {editingCategory === category.id ? (
+                        /* Edit Category Form */
+                        <form onSubmit={(e) => handleUpdateCategory(category.id, e)} className="space-y-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Category Name *
+                            </label>
+                            <input
+                              type="text"
+                              value={editCategoryName}
+                              onChange={(e) => setEditCategoryName(e.target.value)}
+                              required
+                              className="w-full px-4 py-2 glass-card border-0 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                              placeholder="Enter category name..."
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Description (Optional)
+                            </label>
+                            <textarea
+                              value={editCategoryDesc}
+                              onChange={(e) => setEditCategoryDesc(e.target.value)}
+                              placeholder="Enter description..."
+                              className="w-full px-4 py-2 glass-card border-0 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                              rows={3}
+                            />
+                          </div>
+                          <div className="flex gap-2">
+                            <button
+                              type="submit"
+                              className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors flex items-center gap-2 text-sm"
+                            >
+                              <FaEdit /> Save Changes
+                            </button>
+                            <button
+                              type="button"
+                              onClick={handleCancelCategoryEdit}
+                              className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors flex items-center gap-2 text-sm"
+                            >
+                              <FaTimes /> Cancel
+                            </button>
+                          </div>
+                        </form>
+                      ) : (
+                        <>
+                          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-2">
+                            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                              <h3 className="text-xl sm:text-2xl font-bold text-gray-800">
+                                {category.name}
+                              </h3>
+                              <span
+                                className={`px-2 sm:px-3 py-1 rounded-full text-xs font-semibold ${
+                                  category.isActive
+                                    ? "bg-green-100 text-green-800"
+                                    : "bg-gray-100 text-gray-800"
+                                }`}
+                              >
+                                {category.isActive ? "Active" : "Inactive"}
+                              </span>
+                            </div>
+                            <button
+                              onClick={() => handleEditCategory(category)}
+                              className="bg-blue-100 text-blue-800 px-3 py-1.5 rounded-lg hover:bg-blue-200 transition-colors flex items-center gap-2 text-sm"
+                            >
+                              <FaEdit /> Edit
+                            </button>
+                          </div>
+                          {category.description && (
+                            <p className="text-sm sm:text-base text-gray-600 mb-3">{category.description}</p>
+                          )}
+                        </>
                       )}
                       <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-xs sm:text-sm text-gray-500 mb-4">
                         <span className="flex items-center gap-2">
