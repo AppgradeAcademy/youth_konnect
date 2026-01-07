@@ -30,7 +30,9 @@ export default function SearchUsers() {
   useEffect(() => {
     const userData = localStorage.getItem("user");
     if (userData) {
-      setUser(JSON.parse(userData));
+      const userObj = JSON.parse(userData);
+      setUser(userObj);
+      fetchSuggestedUsers(userObj.id);
     } else {
       router.push("/login");
     }
@@ -44,9 +46,34 @@ export default function SearchUsers() {
 
       return () => clearTimeout(timeoutId);
     } else {
-      setResults([]);
+      // Show suggested users when search is cleared
+      if (user) {
+        fetchSuggestedUsers(user.id);
+      }
     }
   }, [searchQuery]);
+
+  const fetchSuggestedUsers = async (userId: string) => {
+    setLoading(true);
+    try {
+      const response = await fetch(`/api/users/search?userId=${userId}`);
+      if (response.ok) {
+        const data = await response.json();
+        if (Array.isArray(data)) {
+          setResults(data);
+          const map: Record<string, boolean> = {};
+          data.forEach((u: User) => {
+            map[u.id] = u.isFollowing || false;
+          });
+          setFollowingMap(map);
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching suggested users:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const searchUsers = async () => {
     if (!searchQuery.trim() || !user) return;
@@ -163,47 +190,50 @@ export default function SearchUsers() {
 
       {!loading && results.length > 0 && (
         <div className="space-y-2">
-          {results.map((user) => (
+          {!searchQuery && (
+            <h2 className="text-lg font-semibold text-gray-900 mb-3 px-2">Suggested Users</h2>
+          )}
+          {results.map((userItem) => (
             <div
-              key={user.id}
+              key={userItem.id}
               className="instagram-card p-4 flex items-center justify-between"
             >
               <div className="flex items-center gap-3 flex-1">
                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#DC143C] to-[#B8122E] flex items-center justify-center text-white font-semibold">
-                  {(user.name[0] || "U").toUpperCase()}
+                  {(userItem.name[0] || "U").toUpperCase()}
                 </div>
                 <div className="flex-1">
                   <p className="font-semibold text-gray-900">
-                    {user.name}
-                    {user.role === "admin" && (
+                    {userItem.name}
+                    {userItem.role === "admin" && (
                       <span className="ml-2 text-xs bg-[#DC143C] text-white px-2 py-0.5 rounded">
                         Church
                       </span>
                     )}
                   </p>
-                  {user.username && (
-                    <p className="text-sm text-gray-500">@{user.username}</p>
+                  {userItem.username && (
+                    <p className="text-sm text-gray-500">@{userItem.username}</p>
                   )}
-                  {user._count && (
+                  {userItem._count && (
                     <p className="text-xs text-gray-400">
-                      {user._count.followers} followers
+                      {userItem._count.followers} followers
                     </p>
                   )}
                 </div>
               </div>
               <button
                 onClick={() =>
-                  followingMap[user.id]
-                    ? handleUnfollow(user.id)
-                    : handleFollow(user.id)
+                  followingMap[userItem.id]
+                    ? handleUnfollow(userItem.id)
+                    : handleFollow(userItem.id)
                 }
                 className={`px-4 py-2 rounded-lg font-semibold transition-colors flex items-center gap-2 ${
-                  followingMap[user.id]
+                  followingMap[userItem.id]
                     ? "bg-gray-200 text-gray-700 hover:bg-gray-300"
                     : "bg-[#DC143C] text-white hover:bg-[#B8122E]"
                 }`}
               >
-                {followingMap[user.id] ? (
+                {followingMap[userItem.id] ? (
                   <>
                     <FaUserCheck /> Following
                   </>
@@ -218,12 +248,6 @@ export default function SearchUsers() {
         </div>
       )}
 
-      {!searchQuery && (
-        <div className="instagram-card p-8 text-center">
-          <FaSearch className="text-4xl mx-auto mb-4 text-gray-300" />
-          <p className="text-gray-500">Start typing to search for users</p>
-        </div>
-      )}
     </div>
   );
 }
