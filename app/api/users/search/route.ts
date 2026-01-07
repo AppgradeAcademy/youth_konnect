@@ -7,42 +7,84 @@ export async function GET(request: NextRequest) {
     const query = searchParams.get('q') || '';
     const userId = searchParams.get('userId'); // Current user ID to exclude from results and check follows
 
-    // If no query, return suggested users (recent users, excluding current user)
+    // If no query, return suggested users (users not yet followed, excluding current user)
     if (!query.trim()) {
-      const suggestedUsers = await prisma.user.findMany({
-        where: userId ? { id: { not: userId } } : {},
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          username: true,
-          role: true,
-          createdAt: true,
-          _count: {
-            select: {
-              followers: true,
-              following: true,
-            },
-          },
-        },
-        take: 10,
-        orderBy: { createdAt: 'desc' }, // Most recent users first
-      });
-
-      // If userId provided, check if current user follows each user
-      if (userId && suggestedUsers.length > 0) {
+      let suggestedUsers: any[] = [];
+      
+      if (userId) {
+        // Get users the current user is already following
         const followingIds = await prisma.userFollow.findMany({
           where: { followerId: userId },
           select: { followingId: true },
         });
         const followingSet = new Set(followingIds.map(f => f.followingId));
 
-        const usersWithFollowStatus = suggestedUsers.map(user => ({
+        // Get all users except current user and those already followed
+        const allUsers = await prisma.user.findMany({
+          where: {
+            id: { not: userId },
+          },
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            username: true,
+            role: true,
+            createdAt: true,
+            _count: {
+              select: {
+                followers: true,
+                following: true,
+              },
+            },
+          },
+          take: 50, // Get more to filter
+        });
+
+        // Filter to users not yet followed, prioritize by follower count (popular users first)
+        const notFollowedUsers = allUsers
+          .filter(u => !followingSet.has(u.id))
+          .sort((a, b) => (b._count?.followers || 0) - (a._count?.followers || 0))
+          .slice(0, 10);
+
+        suggestedUsers = notFollowedUsers.map(user => ({
           ...user,
-          isFollowing: followingSet.has(user.id),
+          isFollowing: false,
         }));
 
-        return NextResponse.json(usersWithFollowStatus);
+        // If we don't have enough, add some already-followed users (marked as following)
+        if (suggestedUsers.length < 10) {
+          const followedUsers = allUsers
+            .filter(u => followingSet.has(u.id))
+            .sort((a, b) => (b._count?.followers || 0) - (a._count?.followers || 0))
+            .slice(0, 10 - suggestedUsers.length)
+            .map(user => ({
+              ...user,
+              isFollowing: true,
+            }));
+          
+          suggestedUsers = [...suggestedUsers, ...followedUsers];
+        }
+      } else {
+        // No userId, just return most popular users
+        suggestedUsers = await prisma.user.findMany({
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            username: true,
+            role: true,
+            createdAt: true,
+            _count: {
+              select: {
+                followers: true,
+                following: true,
+              },
+            },
+          },
+          take: 10,
+          orderBy: { createdAt: 'desc' },
+        });
       }
 
       return NextResponse.json(suggestedUsers);

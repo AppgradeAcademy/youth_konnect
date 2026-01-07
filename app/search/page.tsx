@@ -191,7 +191,10 @@ export default function SearchUsers() {
       {!loading && results.length > 0 && (
         <div className="space-y-2">
           {!searchQuery && (
-            <h2 className="text-lg font-semibold text-gray-900 mb-3 px-2">Suggested Users</h2>
+            <div className="px-2 mb-4">
+              <h2 className="text-lg font-semibold text-gray-900 mb-1">People You May Know</h2>
+              <p className="text-sm text-gray-500">Discover and connect with other members</p>
+            </div>
           )}
           {results.map((userItem) => (
             <div
