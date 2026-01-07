@@ -432,8 +432,9 @@ export default function AdminDashboard() {
         setShowEventForm(false);
         setEditingEvent(null);
         fetchEvents();
+        showToast(editingEvent ? "Event updated successfully!" : "Event added successfully!", "success");
       } else {
-        alert("Failed to save event");
+        showToast("Failed to save event", "error");
       }
     } catch (error) {
       console.error("Error saving event:", error);
