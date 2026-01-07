@@ -35,24 +35,17 @@ export default function BottomNavigation() {
           </Link>
 
           <Link
-            href="/chatroom"
+            href="/create"
             className={`flex flex-col items-center justify-center flex-1 h-full relative ${
-              isActive("/chatroom") ? "text-[#DC143C]" : "text-gray-600"
+              isActive("/create") ? "text-[#DC143C]" : "text-gray-600"
             }`}
           >
-            <div className="relative">
-              <FaPlusCircle className="text-3xl" />
-              {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
-                  {unreadCount > 9 ? "9+" : unreadCount}
-                </span>
-              )}
-            </div>
+            <FaPlusCircle className="text-3xl" />
             <span className="text-xs mt-1">Post</span>
           </Link>
 
           <Link
-            href="/chatroom?tab=chat"
+            href="/chatroom"
             className={`flex flex-col items-center justify-center flex-1 h-full relative ${
               pathname === "/chatroom" ? "text-[#DC143C]" : "text-gray-600"
             }`}

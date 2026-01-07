@@ -2,11 +2,23 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { FaHeart, FaComment, FaPaperPlane, FaBookmark, FaEllipsisH, FaUserCircle } from "react-icons/fa";
-import Image from "next/image";
-import Link from "next/link";
+import { FaHeart, FaComment, FaPaperPlane, FaBookmark, FaEllipsisH, FaUserCircle, FaPaperPlane as FaSend } from "react-icons/fa";
+import { useToast } from "@/contexts/ToastContext";
+import { useNotifications } from "@/contexts/NotificationContext";
 
-interface Question {
+interface Comment {
+  id: string;
+  content: string;
+  createdAt: string;
+  user: {
+    id: string;
+    name: string;
+    username: string | null;
+    email: string;
+  };
+}
+
+interface Post {
   id: string;
   title: string;
   content: string;
@@ -19,32 +31,106 @@ interface Question {
     name: string;
     email: string;
   } | null;
+  answers?: Comment[];
   _count?: { answers: number };
 }
 
 export default function Home() {
   const router = useRouter();
-  const [questions, setQuestions] = useState<Question[]>([]);
+  const { showToast } = useToast();
+  const { addNotification } = useNotifications();
+  const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
+  const [expandedComments, setExpandedComments] = useState<Set<string>>(new Set());
+  const [newComments, setNewComments] = useState<Record<string, string>>({});
+  const [postingComment, setPostingComment] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     const userData = localStorage.getItem("user");
     if (userData) {
       setUser(JSON.parse(userData));
     }
-    fetchQuestions();
+    fetchPosts();
   }, []);
 
-  const fetchQuestions = async () => {
+  const fetchPosts = async () => {
     try {
       const response = await fetch("/api/questions");
       const data = await response.json();
-      setQuestions(data);
+      setPosts(data);
     } catch (error) {
-      console.error("Error fetching questions:", error);
+      console.error("Error fetching posts:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchComments = async (postId: string) => {
+    try {
+      const response = await fetch(`/api/questions/${postId}/answers`);
+      const data = await response.json();
+      setPosts(prev => prev.map(post => 
+        post.id === postId ? { ...post, answers: data } : post
+      ));
+    } catch (error) {
+      console.error("Error fetching comments:", error);
+    }
+  };
+
+  const handleToggleComments = (postId: string) => {
+    setExpandedComments(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(postId)) {
+        newSet.delete(postId);
+      } else {
+        newSet.add(postId);
+        // Fetch comments if not already loaded
+        const post = posts.find(p => p.id === postId);
+        if (post && !post.answers) {
+          fetchComments(postId);
+        }
+      }
+      return newSet;
+    });
+  };
+
+  const handleSubmitComment = async (postId: string, e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newComments[postId]?.trim() || !user) return;
+
+    setPostingComment(prev => ({ ...prev, [postId]: true }));
+    try {
+      const response = await fetch(`/api/questions/${postId}/answers`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: user.id,
+          content: newComments[postId].trim(),
+        }),
+      });
+
+      if (response.ok) {
+        const newComment = await response.json();
+        setPosts(prev => prev.map(post => 
+          post.id === postId 
+            ? { 
+                ...post, 
+                answers: [...(post.answers || []), newComment],
+                _count: { answers: (post._count?.answers || 0) + 1 }
+              } 
+            : post
+        ));
+        setNewComments(prev => ({ ...prev, [postId]: "" }));
+        showToast("Comment posted!", "success");
+      } else {
+        showToast("Failed to post comment", "error");
+      }
+    } catch (error) {
+      console.error("Error posting comment:", error);
+      showToast("Failed to post comment", "error");
+    } finally {
+      setPostingComment(prev => ({ ...prev, [postId]: false }));
     }
   };
 
@@ -58,6 +144,10 @@ export default function Home() {
     if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
     if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)}d ago`;
     return date.toLocaleDateString();
+  };
+
+  const displayName = (commentUser: Comment["user"]) => {
+    return commentUser.username || commentUser.name;
   };
 
   if (loading) {
@@ -74,128 +164,194 @@ export default function Home() {
         <div className="instagram-card p-8 text-center">
           <h2 className="text-2xl font-bold text-gray-800 mb-4">Welcome to Youth Connect</h2>
           <p className="text-gray-600 mb-6">Please log in to see posts from our community</p>
-          <Link
-            href="/login"
+          <button
+            onClick={() => router.push("/login")}
             className="inline-block bg-[#DC143C] text-white px-6 py-3 rounded-lg font-semibold hover:bg-[#B8122E] transition-colors"
           >
             Login
-          </Link>
+          </button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-4">
-      {questions.length === 0 ? (
+    <div className="max-w-2xl mx-auto px-4 py-4 pb-20 md:pb-4">
+      {posts.length === 0 ? (
         <div className="instagram-card p-8 text-center">
           <p className="text-gray-500 mb-4">No posts yet</p>
-          <Link
-            href="/chatroom"
+          <button
+            onClick={() => router.push("/create")}
             className="inline-block bg-[#DC143C] text-white px-6 py-3 rounded-lg font-semibold hover:bg-[#B8122E] transition-colors"
           >
             Create First Post
-          </Link>
+          </button>
         </div>
       ) : (
         <div className="space-y-6">
-          {questions.map((question) => (
-            <article key={question.id} className="instagram-card">
-              {/* Post Header */}
-              <div className="flex items-center justify-between p-4 pb-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#DC143C] to-[#B8122E] flex items-center justify-center text-white font-semibold">
-                    {question.isAnonymous ? (
-                      <FaUserCircle className="text-lg" />
-                    ) : (
-                      (question.user?.name?.[0] || "U").toUpperCase()
+          {posts.map((post) => {
+            const isExpanded = expandedComments.has(post.id);
+            const commentCount = post._count?.answers || post.answers?.length || 0;
+            
+            return (
+              <article key={post.id} className="instagram-card">
+                {/* Post Header */}
+                <div className="flex items-center justify-between p-4 pb-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#DC143C] to-[#B8122E] flex items-center justify-center text-white font-semibold">
+                      {post.isAnonymous ? (
+                        <FaUserCircle className="text-lg" />
+                      ) : (
+                        (post.user?.name?.[0] || "U").toUpperCase()
+                      )}
+                    </div>
+                    <div>
+                      <p className="font-semibold text-gray-900 text-sm">
+                        {post.isAnonymous ? "Anonymous" : post.user?.name || "Unknown"}
+                      </p>
+                      <p className="text-xs text-gray-500">{formatTimeAgo(post.createdAt)}</p>
+                    </div>
+                  </div>
+                  <button className="text-gray-600 hover:text-gray-900">
+                    <FaEllipsisH />
+                  </button>
+                </div>
+
+                {/* Post Image */}
+                {post.imageUrl && (
+                  <div className="w-full aspect-square bg-gray-100 relative">
+                    <img
+                      src={post.imageUrl}
+                      alt={post.title}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                )}
+
+                {/* Post Actions */}
+                <div className="p-4 pt-3">
+                  <div className="flex items-center gap-4 mb-3">
+                    <button className="text-gray-900 hover:opacity-70 transition-opacity">
+                      <FaHeart className="text-2xl" />
+                    </button>
+                    <button 
+                      onClick={() => handleToggleComments(post.id)}
+                      className="text-gray-900 hover:opacity-70 transition-opacity"
+                    >
+                      <FaComment className="text-2xl" />
+                    </button>
+                    <button className="text-gray-900 hover:opacity-70 transition-opacity">
+                      <FaPaperPlane className="text-2xl" />
+                    </button>
+                    <div className="flex-1"></div>
+                    <button className="text-gray-900 hover:opacity-70 transition-opacity">
+                      <FaBookmark className="text-2xl" />
+                    </button>
+                  </div>
+
+                  {/* Comments count */}
+                  {commentCount > 0 && (
+                    <button
+                      onClick={() => handleToggleComments(post.id)}
+                      className="text-sm text-gray-500 mb-2 hover:text-gray-700"
+                    >
+                      View all {commentCount} {commentCount === 1 ? "comment" : "comments"}
+                    </button>
+                  )}
+
+                  {/* Post Caption */}
+                  <div className="mb-2">
+                    <p className="text-sm">
+                      <span className="font-semibold text-gray-900">
+                        {post.isAnonymous ? "Anonymous" : post.user?.name || "Unknown"}
+                      </span>
+                      <span className="text-gray-900 ml-2">{post.title}</span>
+                    </p>
+                    {post.content && (
+                      <p className="text-sm text-gray-700 mt-1">{post.content}</p>
                     )}
                   </div>
-                  <div>
-                    <p className="font-semibold text-gray-900 text-sm">
-                      {question.isAnonymous ? "Anonymous" : question.user?.name || "Unknown"}
-                    </p>
-                    <p className="text-xs text-gray-500">{formatTimeAgo(question.createdAt)}</p>
-                  </div>
-                </div>
-                <button className="text-gray-600 hover:text-gray-900">
-                  <FaEllipsisH />
-                </button>
-              </div>
 
-              {/* Post Image */}
-              {question.imageUrl && (
-                <div className="w-full aspect-square bg-gray-100 relative">
-                  <img
-                    src={question.imageUrl}
-                    alt={question.title}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-              )}
+                  {/* Tags */}
+                  {post.tags && (
+                    <div className="flex gap-2 flex-wrap mt-2 mb-2">
+                      {post.tags.split(',').map((tag: string, idx: number) => (
+                        <span key={idx} className="text-sm text-blue-600">
+                          #{tag.trim()}
+                        </span>
+                      ))}
+                    </div>
+                  )}
 
-              {/* Post Actions */}
-              <div className="p-4 pt-3">
-                <div className="flex items-center gap-4 mb-3">
-                  <button className="text-gray-900 hover:opacity-70 transition-opacity">
-                    <FaHeart className="text-2xl" />
-                  </button>
-                  <Link
-                    href={`/chatroom?question=${question.id}`}
-                    className="text-gray-900 hover:opacity-70 transition-opacity"
-                  >
-                    <FaComment className="text-2xl" />
-                  </Link>
-                  <button className="text-gray-900 hover:opacity-70 transition-opacity">
-                    <FaPaperPlane className="text-2xl" />
-                  </button>
-                  <div className="flex-1"></div>
-                  <button className="text-gray-900 hover:opacity-70 transition-opacity">
-                    <FaBookmark className="text-2xl" />
-                  </button>
-                </div>
+                  {/* Comments Section */}
+                  {isExpanded && (
+                    <div className="border-t border-gray-100 pt-3 mt-3">
+                      {/* Existing Comments */}
+                      {post.answers && post.answers.length > 0 && (
+                        <div className="space-y-3 mb-3 max-h-64 overflow-y-auto">
+                          {post.answers.map((comment) => (
+                            <div key={comment.id} className="flex gap-3">
+                              <div className="w-6 h-6 rounded-full bg-gradient-to-br from-[#DC143C] to-[#B8122E] flex items-center justify-center text-white text-xs font-semibold flex-shrink-0">
+                                {(displayName(comment.user)[0] || "U").toUpperCase()}
+                              </div>
+                              <div className="flex-1">
+                                <p className="text-sm">
+                                  <span className="font-semibold text-gray-900">{displayName(comment.user)}</span>
+                                  <span className="text-gray-900 ml-2">{comment.content}</span>
+                                </p>
+                                <p className="text-xs text-gray-400 mt-1">{formatTimeAgo(comment.createdAt)}</p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
 
-                {/* Likes count */}
-                <p className="text-sm font-semibold text-gray-900 mb-2">
-                  {question._count?.answers || 0} {question._count?.answers === 1 ? "answer" : "answers"}
-                </p>
+                      {/* Add Comment Form */}
+                      <form onSubmit={(e) => handleSubmitComment(post.id, e)} className="flex gap-2 pt-2 border-t border-gray-100">
+                        <div className="w-6 h-6 rounded-full bg-gradient-to-br from-[#DC143C] to-[#B8122E] flex items-center justify-center text-white text-xs font-semibold flex-shrink-0">
+                          {(user.name[0] || "U").toUpperCase()}
+                        </div>
+                        <input
+                          type="text"
+                          value={newComments[post.id] || ""}
+                          onChange={(e) => setNewComments(prev => ({ ...prev, [post.id]: e.target.value }))}
+                          placeholder="Add a comment..."
+                          className="flex-1 text-sm border-0 focus:ring-0 focus:outline-none"
+                        />
+                        <button
+                          type="submit"
+                          disabled={!newComments[post.id]?.trim() || postingComment[post.id]}
+                          className="text-[#DC143C] font-semibold text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {postingComment[post.id] ? "Posting..." : "Post"}
+                        </button>
+                      </form>
+                    </div>
+                  )}
 
-                {/* Post Caption */}
-                <div className="mb-2">
-                  <p className="text-sm">
-                    <span className="font-semibold text-gray-900">
-                      {question.isAnonymous ? "Anonymous" : question.user?.name || "Unknown"}
-                    </span>
-                    <span className="text-gray-900 ml-2">{question.title}</span>
-                  </p>
-                  {question.content && (
-                    <p className="text-sm text-gray-700 mt-1">{question.content}</p>
+                  {/* Comment Toggle for collapsed state */}
+                  {!isExpanded && commentCount === 0 && (
+                    <form onSubmit={(e) => handleSubmitComment(post.id, e)} className="flex gap-2 pt-2 border-t border-gray-100 mt-3">
+                      <input
+                        type="text"
+                        value={newComments[post.id] || ""}
+                        onChange={(e) => setNewComments(prev => ({ ...prev, [post.id]: e.target.value }))}
+                        placeholder="Add a comment..."
+                        className="flex-1 text-sm border-0 focus:ring-0 focus:outline-none"
+                      />
+                      <button
+                        type="submit"
+                        disabled={!newComments[post.id]?.trim() || postingComment[post.id]}
+                        className="text-[#DC143C] font-semibold text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {postingComment[post.id] ? "Posting..." : "Post"}
+                      </button>
+                    </form>
                   )}
                 </div>
-
-                {/* Tags */}
-                {question.tags && (
-                  <div className="flex gap-2 flex-wrap mt-2">
-                    {question.tags.split(',').map((tag: string, idx: number) => (
-                      <span key={idx} className="text-sm text-blue-600">
-                        #{tag.trim()}
-                      </span>
-                    ))}
-                  </div>
-                )}
-
-                {/* View Comments */}
-                {question._count && question._count.answers > 0 && (
-                  <Link
-                    href={`/chatroom?question=${question.id}`}
-                    className="text-sm text-gray-500 mt-2 block hover:text-gray-700"
-                  >
-                    View all {question._count.answers} {question._count.answers === 1 ? "answer" : "answers"}
-                  </Link>
-                )}
-              </div>
-            </article>
-          ))}
+              </article>
+            );
+          })}
         </div>
       )}
     </div>
