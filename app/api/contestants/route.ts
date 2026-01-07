@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
+// Force dynamic rendering
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 // GET all contestants across all categories (for selecting existing ones)
 export async function GET() {
   try {
