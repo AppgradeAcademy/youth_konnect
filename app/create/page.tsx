@@ -174,10 +174,24 @@ export default function CreatePost() {
                   const file = e.target.files?.[0];
                   if (!file) return;
 
+                  // Client-side file size validation (max 5MB)
+                  const maxSize = 5 * 1024 * 1024; // 5MB
+                  if (file.size > maxSize) {
+                    showToast('File size too large. Maximum size is 5MB. Please compress or choose a smaller image.', "error");
+                    e.target.value = ''; // Clear the input
+                    return;
+                  }
+
                   setUploading(true);
                   try {
+                    // Compress image if it's larger than 2MB
+                    let fileToUpload = file;
+                    if (file.size > 2 * 1024 * 1024) {
+                      fileToUpload = await compressImage(file);
+                    }
+
                     const formData = new FormData();
-                    formData.append('file', file);
+                    formData.append('file', fileToUpload);
 
                     const response = await fetch('/api/upload/contestant', {
                       method: 'POST',
@@ -189,12 +203,22 @@ export default function CreatePost() {
                       setImageUrl(data.url);
                       setImagePreview(data.url);
                     } else {
-                      const error = await response.json();
+                      const errorText = await response.text();
+                      let error;
+                      try {
+                        error = JSON.parse(errorText);
+                      } catch {
+                        error = { error: `Server error (${response.status}). Image may be too large.` };
+                      }
                       showToast(error.error || 'Failed to upload image', "error");
                     }
-                  } catch (error) {
+                  } catch (error: any) {
                     console.error('Error uploading image:', error);
-                    showToast('Failed to upload image. Please try again.', "error");
+                    if (error.message?.includes('413') || error.message?.includes('too large')) {
+                      showToast('Image is too large. Please use a smaller image (max 5MB).', "error");
+                    } else {
+                      showToast('Failed to upload image. Please try again.', "error");
+                    }
                   } finally {
                     setUploading(false);
                   }
