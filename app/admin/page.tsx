@@ -307,6 +307,49 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleEditCategory = (category: Category) => {
+    setEditingCategory(category.id);
+    setEditCategoryName(category.name);
+    setEditCategoryDesc(category.description || "");
+  };
+
+  const handleUpdateCategory = async (categoryId: string, e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editCategoryName.trim()) {
+      alert("Category name is required");
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/categories/${categoryId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: editCategoryName.trim(),
+          description: editCategoryDesc.trim() || null,
+        }),
+      });
+
+      if (response.ok) {
+        setEditingCategory(null);
+        setEditCategoryName("");
+        setEditCategoryDesc("");
+        fetchCategories();
+      } else {
+        alert("Failed to update category");
+      }
+    } catch (error) {
+      console.error("Error updating category:", error);
+      alert("Failed to update category");
+    }
+  };
+
+  const handleCancelCategoryEdit = () => {
+    setEditingCategory(null);
+    setEditCategoryName("");
+    setEditCategoryDesc("");
+  };
+
   const handleDeleteCategory = async (categoryId: string) => {
     if (!confirm("Are you sure you want to delete this category? This will also delete all votes for it.")) {
       return;
