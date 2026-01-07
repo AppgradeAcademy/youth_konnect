@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { FaHome, FaVoteYea, FaPlusCircle, FaComments, FaUser, FaSearch } from "react-icons/fa";
+import { FaHome, FaPoll, FaPlusCircle, FaComments, FaUser, FaSearch } from "react-icons/fa";
 import { useNotifications } from "@/contexts/NotificationContext";
 
 export default function BottomNavigation() {
@@ -30,8 +30,8 @@ export default function BottomNavigation() {
               isActive("/myvote") ? "text-[#DC143C]" : "text-gray-600"
             }`}
           >
-            <FaVoteYea className="text-2xl" />
-            <span className="text-xs mt-1">Vote</span>
+            <FaPoll className="text-2xl" />
+            <span className="text-xs mt-1">Poll</span>
           </Link>
 
           <Link

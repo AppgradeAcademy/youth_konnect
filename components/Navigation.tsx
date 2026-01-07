@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, useRef } from "react";
-import { FaHome, FaVoteYea, FaComments, FaInfoCircle, FaSignInAlt, FaUser, FaSignOutAlt, FaUserShield, FaBars, FaTimes, FaBell, FaPlusCircle } from "react-icons/fa";
+import { FaHome, FaPoll, FaComments, FaInfoCircle, FaSignInAlt, FaUser, FaSignOutAlt, FaUserShield, FaBars, FaTimes, FaBell, FaPlusCircle } from "react-icons/fa";
 import Logo from "./Logo";
 import { useNotifications } from "@/contexts/NotificationContext";
 
@@ -91,8 +91,8 @@ export default function Navigation() {
                   : "text-gray-700 hover:text-gray-900 hover:bg-gray-50"
               }`}
             >
-              <FaVoteYea className="text-xl" />
-              <span className="hidden sm:inline">MyVote</span>
+              <FaPoll className="text-xl" />
+              <span className="hidden sm:inline">Poll</span>
             </Link>
             <Link
               href="/chatroom"
@@ -277,8 +277,8 @@ export default function Navigation() {
                     : "text-gray-700 hover:text-gray-900 hover:bg-gray-50"
                 }`}
               >
-                <FaVoteYea className="text-xl" />
-                <span>MyVote</span>
+                <FaPoll className="text-xl" />
+                <span>Poll</span>
               </Link>
               <Link
                 href="/chatroom"
