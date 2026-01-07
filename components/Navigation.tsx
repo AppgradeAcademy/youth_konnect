@@ -60,12 +60,12 @@ export default function Navigation() {
   const isActive = (path: string) => pathname === path;
 
   return (
-    <nav className="nav-clean sticky top-0 z-50 bg-white hidden md:block">
+    <nav className="nav-clean sticky top-0 z-50 bg-white shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          <Link href="/" className="flex items-center gap-2 sm:gap-3 hover:opacity-80 transition-opacity">
+          <Link href="/" className="flex items-center gap-2 sm:gap-3 hover:opacity-80 transition-opacity flex-shrink-0">
             <Logo />
-            <span className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-[#DC143C] to-[#B8122E] bg-clip-text text-transparent">
+            <span className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-[#DC143C] to-[#B8122E] bg-clip-text text-transparent whitespace-nowrap">
               Youth Connect
             </span>
           </Link>
@@ -154,7 +154,7 @@ export default function Navigation() {
           </div>
 
           {/* Mobile Menu Button and Notification Bell */}
-          <div className="md:hidden flex items-center gap-2">
+          <div className="md:hidden flex items-center gap-2 flex-shrink-0">
             <div className="relative" ref={notificationRef}>
               <button
                 onClick={() => setNotificationPanelOpen(!notificationPanelOpen)}
