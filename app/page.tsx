@@ -58,16 +58,20 @@ export default function Home() {
     try {
       const response = await fetch("/api/questions");
       if (!response.ok) {
-        console.error("Failed to fetch posts:", response.status);
+        const errorData = await response.json().catch(() => ({}));
+        console.error("Failed to fetch posts:", response.status, errorData);
         setPosts([]);
+        setLoading(false);
         return;
       }
       const data = await response.json();
+      console.log("Fetched posts:", data); // Debug log
       // Ensure data is an array
       if (Array.isArray(data)) {
+        console.log("Setting posts:", data.length, "posts found");
         setPosts(data);
       } else {
-        console.error("Invalid data format:", data);
+        console.error("Invalid data format - not an array:", data);
         setPosts([]);
       }
     } catch (error) {
@@ -196,11 +200,13 @@ export default function Home() {
     );
   }
 
+  console.log("Rendering Home - posts count:", posts.length, "loading:", loading, "user:", !!user); // Debug log
+
   return (
     <div className="max-w-2xl mx-auto px-4 py-4 pb-20 md:pb-4">
-      {posts.length === 0 ? (
+      {!loading && posts.length === 0 ? (
         <div className="instagram-card p-8 text-center">
-          <p className="text-gray-500 mb-4">No posts yet</p>
+          <p className="text-gray-500 mb-4">No posts yet. Be the first to share something!</p>
           <button
             onClick={() => router.push("/create")}
             className="inline-block bg-[#DC143C] text-white px-6 py-3 rounded-lg font-semibold hover:bg-[#B8122E] transition-colors"
@@ -208,7 +214,7 @@ export default function Home() {
             Create First Post
           </button>
         </div>
-      ) : (
+      ) : !loading && posts.length > 0 ? (
         <div className="space-y-6">
           {posts.map((post) => {
             const isExpanded = expandedComments.has(post.id);

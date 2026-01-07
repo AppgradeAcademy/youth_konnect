@@ -48,10 +48,15 @@ export async function GET() {
     }));
 
     return NextResponse.json(sanitizedQuestions);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error fetching questions:', error);
+    console.error('Error details:', error?.message, error?.stack);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { 
+        error: 'Internal server error',
+        message: process.env.NODE_ENV === 'development' ? error?.message : undefined,
+        details: process.env.NODE_ENV === 'development' ? error?.stack : undefined
+      },
       { status: 500 }
     );
   }
