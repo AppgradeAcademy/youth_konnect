@@ -52,12 +52,19 @@ export default function BottomNavigation() {
           </Link>
 
           <Link
-            href="/chatroom?tab=questions"
-            className={`flex flex-col items-center justify-center flex-1 h-full ${
+            href="/chatroom?tab=chat"
+            className={`flex flex-col items-center justify-center flex-1 h-full relative ${
               pathname === "/chatroom" ? "text-[#DC143C]" : "text-gray-600"
             }`}
           >
-            <FaComments className="text-2xl" />
+            <div className="relative">
+              <FaComments className="text-2xl" />
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                  {unreadCount > 9 ? "9+" : unreadCount}
+                </span>
+              )}
+            </div>
             <span className="text-xs mt-1">Chat</span>
           </Link>
 

@@ -60,7 +60,7 @@ export default function Navigation() {
   const isActive = (path: string) => pathname === path;
 
   return (
-    <nav className="nav-clean sticky top-0 z-50 bg-white">
+    <nav className="nav-clean sticky top-0 z-50 bg-white hidden md:block">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           <Link href="/" className="flex items-center gap-2 sm:gap-3 hover:opacity-80 transition-opacity">
