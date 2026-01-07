@@ -825,17 +825,15 @@ export default function AdminDashboard() {
                           {category.description && (
                             <p className="text-sm sm:text-base text-gray-600 mb-3">{category.description}</p>
                           )}
-                        </>
-                      )}
-                      <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-xs sm:text-sm text-gray-500 mb-4">
-                        <span className="flex items-center gap-2">
-                          <FaVoteYea /> {category._count.votes} votes
-                        </span>
-                        <span>
-                          Created: {new Date(category.createdAt).toLocaleDateString()}
-                        </span>
-                      </div>
-                      <div className="flex flex-wrap gap-2 mb-4">
+                          <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-xs sm:text-sm text-gray-500 mb-4">
+                            <span className="flex items-center gap-2">
+                              <FaVoteYea /> {category._count.votes} votes
+                            </span>
+                            <span>
+                              Created: {new Date(category.createdAt).toLocaleDateString()}
+                            </span>
+                          </div>
+                          <div className="flex flex-wrap gap-2 mb-4">
                         <button
                           onClick={() => handleToggleActive(category)}
                           className={`px-3 sm:px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
@@ -852,7 +850,9 @@ export default function AdminDashboard() {
                         >
                           <FaTrash /> Delete
                         </button>
-                      </div>
+                          </div>
+                        </>
+                      )}
 
                       {/* Contestants Section */}
                       <div className="mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-gray-200">
