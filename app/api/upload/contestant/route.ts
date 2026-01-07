@@ -1,13 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-// Increase body size limit for this route
-export const config = {
-  api: {
-    bodyParser: {
-      sizeLimit: '10mb',
-    },
-  },
-};
+// Route segment config for App Router
+export const runtime = 'nodejs';
+export const maxDuration = 30;
 
 export async function POST(request: NextRequest) {
   try {
