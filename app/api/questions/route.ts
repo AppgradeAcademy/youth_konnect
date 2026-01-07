@@ -96,10 +96,14 @@ export async function POST(request: NextRequest) {
     });
 
     return NextResponse.json(question, { status: 201 });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error creating question:', error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { 
+        error: 'Internal server error',
+        message: process.env.NODE_ENV === 'development' ? error?.message : undefined,
+        details: process.env.NODE_ENV === 'development' ? error?.stack : undefined
+      },
       { status: 500 }
     );
   }

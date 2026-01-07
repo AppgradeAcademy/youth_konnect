@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { FaHome, FaVoteYea, FaPlusCircle, FaComments, FaUser } from "react-icons/fa";
+import { FaHome, FaVoteYea, FaPlusCircle, FaComments, FaUser, FaSearch } from "react-icons/fa";
 import { useNotifications } from "@/contexts/NotificationContext";
 
 export default function BottomNavigation() {
@@ -62,13 +62,13 @@ export default function BottomNavigation() {
           </Link>
 
           <Link
-            href="/profile"
+            href="/search"
             className={`flex flex-col items-center justify-center flex-1 h-full ${
-              isActive("/profile") ? "text-[#DC143C]" : "text-gray-600"
+              isActive("/search") ? "text-[#DC143C]" : "text-gray-600"
             }`}
           >
-            <FaUser className="text-2xl" />
-            <span className="text-xs mt-1">Profile</span>
+            <FaSearch className="text-2xl" />
+            <span className="text-xs mt-1">Search</span>
           </Link>
         </div>
       </div>

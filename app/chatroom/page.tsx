@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { FaComments, FaPaperPlane, FaUser, FaEdit, FaCheck, FaTimes } from "react-icons/fa";
+import { FaComments, FaPaperPlane, FaUser, FaEdit, FaCheck, FaTimes, FaFilter } from "react-icons/fa";
 import { useToast } from "@/contexts/ToastContext";
 
 interface Message {
@@ -26,6 +26,7 @@ export default function Chatroom() {
   const [newUsername, setNewUsername] = useState("");
   const [editingUsername, setEditingUsername] = useState(false);
   const [chatroomActive, setChatroomActive] = useState(true);
+  const [filter, setFilter] = useState<'all' | 'followingAndChurch' | 'mine' | 'following' | 'church'>('followingAndChurch');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const { showToast } = useToast();
@@ -40,16 +41,20 @@ export default function Chatroom() {
     setUser(userObj);
     setNewUsername(userObj.username || "");
     fetchChatroomStatus();
-    fetchMessages();
     setLoading(false);
-
-    const interval = setInterval(() => {
-      fetchChatroomStatus();
-      fetchMessages();
-    }, 3000);
-
-    return () => clearInterval(interval);
   }, [router]);
+
+  useEffect(() => {
+    if (user) {
+      fetchMessages();
+      const interval = setInterval(() => {
+        fetchChatroomStatus();
+        fetchMessages();
+      }, 3000);
+
+      return () => clearInterval(interval);
+    }
+  }, [user, filter]);
 
   const fetchChatroomStatus = async () => {
     try {
@@ -79,8 +84,10 @@ export default function Chatroom() {
   };
 
   const fetchMessages = async () => {
+    if (!user) return;
+    
     try {
-      const response = await fetch("/api/messages");
+      const response = await fetch(`/api/messages?userId=${user.id}&filter=${filter}`);
       const data = await response.json();
       setMessages(data);
     } catch (error) {
@@ -230,6 +237,60 @@ export default function Chatroom() {
               </button>
             </div>
           )}
+        </div>
+
+        {/* Filter Tabs */}
+        <div className="flex gap-2 overflow-x-auto pb-2 mt-4 border-b border-gray-200">
+          <button
+            onClick={() => setFilter('followingAndChurch')}
+            className={`px-3 py-1 text-sm font-medium whitespace-nowrap rounded-lg transition-colors ${
+              filter === 'followingAndChurch'
+                ? 'bg-[#DC143C] text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            Following & Church
+          </button>
+          <button
+            onClick={() => setFilter('mine')}
+            className={`px-3 py-1 text-sm font-medium whitespace-nowrap rounded-lg transition-colors ${
+              filter === 'mine'
+                ? 'bg-[#DC143C] text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            My Messages
+          </button>
+          <button
+            onClick={() => setFilter('following')}
+            className={`px-3 py-1 text-sm font-medium whitespace-nowrap rounded-lg transition-colors ${
+              filter === 'following'
+                ? 'bg-[#DC143C] text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            Following
+          </button>
+          <button
+            onClick={() => setFilter('church')}
+            className={`px-3 py-1 text-sm font-medium whitespace-nowrap rounded-lg transition-colors ${
+              filter === 'church'
+                ? 'bg-[#DC143C] text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            Church Only
+          </button>
+          <button
+            onClick={() => setFilter('all')}
+            className={`px-3 py-1 text-sm font-medium whitespace-nowrap rounded-lg transition-colors ${
+              filter === 'all'
+                ? 'bg-[#DC143C] text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            All
+          </button>
         </div>
       </div>
 

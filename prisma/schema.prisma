@@ -24,6 +24,22 @@ model User {
   messages  ChatMessage[]
   questions Question[]
   answers   Answer[]
+  following UserFollow[]  @relation("UserFollows")
+  followers UserFollow[]  @relation("UserFollowers")
+}
+
+model UserFollow {
+  id          String   @id @default(cuid())
+  followerId  String
+  followingId String
+  createdAt   DateTime @default(now())
+
+  follower  User @relation("UserFollows", fields: [followerId], references: [id], onDelete: Cascade)
+  following User @relation("UserFollowers", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@unique([followerId, followingId])
+  @@index([followerId])
+  @@index([followingId])
 }
 
 model Category {

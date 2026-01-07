@@ -101,9 +101,16 @@ export default function CreatePost() {
         // Redirect to home
         router.push("/");
       } else {
-        const errorData = await response.json().catch(() => ({ error: "Unknown error" }));
-        showToast(errorData.error || "Failed to create post", "error");
-        console.error("Error response:", errorData);
+        let errorMessage = "Failed to create post";
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorData.message || errorMessage;
+          console.error("Error response:", errorData);
+        } catch (parseError) {
+          console.error("Failed to parse error response:", parseError);
+          errorMessage = `Server error (${response.status}). Please try again.`;
+        }
+        showToast(errorMessage, "error");
       }
     } catch (error) {
       console.error("Error creating post:", error);
