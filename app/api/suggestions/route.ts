@@ -160,7 +160,7 @@ export async function GET(request: NextRequest) {
         const followedUserGroupIds = [...new Set(followedUserGroups.map(g => g.groupId))];
 
         // Get groups not already joined
-        const suggestedGroups = await prisma.group.findMany({
+        const suggestedGroupsRaw = await prisma.group.findMany({
           where: {
             id: { 
               in: followedUserGroupIds,
@@ -180,28 +180,31 @@ export async function GET(request: NextRequest) {
               },
             },
           },
-          take: 5,
-          orderBy: {
-            _count: {
-              members: 'desc',
-            },
-          },
         });
 
-        suggestions.groups = suggestedGroups.map(g => ({
-          id: g.id,
-          name: g.name,
-          description: g.description,
-          organization: g.organization,
-          memberCount: g._count.members,
-        }));
+        // Sort by member count in JavaScript (since Prisma doesn't support _count in orderBy)
+        const suggestedGroups = suggestedGroupsRaw
+          .sort((a, b) => (b._count.members || 0) - (a._count.members || 0))
+          .slice(0, 5)
+          .map(g => ({
+            id: g.id,
+            name: g.name,
+            description: g.description,
+            organization: g.organization,
+            memberCount: g._count.members,
+          }));
+
+        suggestions.groups = suggestedGroups;
       }
 
       // 6. If still not enough groups, add popular groups
       if (suggestions.groups.length < 5) {
-        const popularGroups = await prisma.group.findMany({
+        const existingGroupIds = new Set(suggestions.groups.map(g => g.id));
+        const allGroupsNotJoined = await prisma.group.findMany({
           where: {
-            id: { notIn: userGroupIds },
+            id: { 
+              notIn: [...userGroupIds, ...Array.from(existingGroupIds)],
+            },
           },
           include: {
             organization: {
@@ -216,17 +219,12 @@ export async function GET(request: NextRequest) {
               },
             },
           },
-          take: 5 - suggestions.groups.length,
-          orderBy: {
-            _count: {
-              members: 'desc',
-            },
-          },
         });
 
-        const existingGroupIds = new Set(suggestions.groups.map(g => g.id));
-        const newGroups = popularGroups
-          .filter(g => !existingGroupIds.has(g.id))
+        // Sort by member count and take top groups
+        const popularGroups = allGroupsNotJoined
+          .sort((a, b) => (b._count.members || 0) - (a._count.members || 0))
+          .slice(0, 5 - suggestions.groups.length)
           .map(g => ({
             id: g.id,
             name: g.name,
@@ -235,7 +233,7 @@ export async function GET(request: NextRequest) {
             memberCount: g._count.members,
           }));
 
-        suggestions.groups = [...suggestions.groups, ...newGroups];
+        suggestions.groups = [...suggestions.groups, ...popularGroups];
       }
 
     } catch (error: any) {
