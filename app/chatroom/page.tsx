@@ -106,18 +106,33 @@ export default function Chatroom() {
   }, [user, currentRoomId, view]);
 
   const fetchRooms = async () => {
-    if (!user) return;
+    if (!user) {
+      console.log("No user found, cannot fetch rooms");
+      return;
+    }
     
     try {
+      console.log("Fetching rooms for user:", user.id);
       const response = await fetch(`/api/rooms?userId=${user.id}`);
+      console.log("Rooms API response status:", response.status);
+      
       if (response.ok) {
         const data = await response.json();
+        console.log("Rooms data received:", data);
         if (Array.isArray(data)) {
+          console.log(`Found ${data.length} rooms`);
           setRooms(data);
+        } else {
+          console.error("Rooms data is not an array:", data);
         }
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        console.error("Failed to fetch rooms:", response.status, errorData);
+        showToast("Failed to load chatrooms", "error");
       }
     } catch (error) {
       console.error("Error fetching rooms:", error);
+      showToast("Error loading chatrooms", "error");
     }
   };
 
@@ -443,7 +458,7 @@ export default function Chatroom() {
                     ) : room.isMember ? (
                       <button
                         onClick={() => handleJoinRoom(room.id)}
-                        disabled={!room.chatroomSettings?.isActive}
+                        disabled={room.chatroomSettings && !room.chatroomSettings.isActive}
                         className="bg-green-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-green-700 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <FaSignInAlt /> Join

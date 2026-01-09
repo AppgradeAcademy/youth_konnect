@@ -7,47 +7,78 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const userId = searchParams.get('userId'); // Optional: filter to user's groups or show all
 
-    // Get groups that have active chatrooms
-    const groups = await prisma.group.findMany({
-      where: {
-        chatroomSettings: {
-          isActive: true,
-        },
-      },
-      include: {
-        organization: {
-          select: {
-            id: true,
-            name: true,
+    // Get groups - if userId provided, show user's groups; otherwise show all groups with active chatrooms
+    let groups;
+    
+    if (userId) {
+      // Get all groups the user is a member of
+      const userMemberships = await prisma.groupMembership.findMany({
+        where: { userId },
+        include: {
+          group: {
+            include: {
+              organization: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+              chatroomSettings: {
+                select: {
+                  isActive: true,
+                  requiresPassword: true,
+                },
+              },
+              _count: {
+                select: {
+                  members: true,
+                  presences: true,
+                  messages: true,
+                },
+              },
+            },
           },
         },
-        chatroomSettings: {
-          select: {
+      });
+      
+      groups = userMemberships.map(m => m.group);
+    } else {
+      // Get groups that have active chatrooms (public view)
+      groups = await prisma.group.findMany({
+        where: {
+          chatroomSettings: {
             isActive: true,
-            requiresPassword: true,
           },
         },
-        _count: {
-          select: {
-            members: true,
-            presences: true, // Count of users currently in room
-            messages: true,
+        include: {
+          organization: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          chatroomSettings: {
+            select: {
+              isActive: true,
+              requiresPassword: true,
+            },
+          },
+          _count: {
+            select: {
+              members: true,
+              presences: true,
+              messages: true,
+            },
           },
         },
-      },
-    });
+      });
+    }
 
     // Sort manually by active users count (most active first)
     groups.sort((a, b) => (b._count.presences || 0) - (a._count.presences || 0));
 
-    // If userId provided, check membership status and current presence
+    // If userId provided, check current presence
     if (userId) {
-      const userMemberships = await prisma.groupMembership.findMany({
-        where: { userId },
-        select: { groupId: true },
-      });
-      const membershipSet = new Set(userMemberships.map(m => m.groupId));
-
       const userPresences = await prisma.roomPresence.findMany({
         where: { userId },
         select: { groupId: true },
@@ -56,7 +87,7 @@ export async function GET(request: NextRequest) {
 
       const rooms = groups.map(group => ({
         ...group,
-        isMember: membershipSet.has(group.id),
+        isMember: true, // User is already a member (we filtered by membership)
         isPresent: presenceSet.has(group.id),
         memberCount: group._count.members,
         activeUsers: group._count.presences,
