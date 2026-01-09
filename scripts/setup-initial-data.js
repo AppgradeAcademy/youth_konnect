@@ -36,29 +36,50 @@ async function main() {
       console.log('Organization already exists: AFM Rzeszow');
     }
 
-    // 3. Create or get "Youth Connect" group
+    // 3. Create or get "AFM Youth Connect" group
     let group = await prisma.group.findFirst({
       where: {
-        name: 'Youth Connect',
+        name: 'AFM Youth Connect',
         organizationId: organization.id,
       },
     });
 
     if (!group) {
-      group = await prisma.group.create({
-        data: {
+      // Check if old "Youth Connect" exists and update it
+      const oldGroup = await prisma.group.findFirst({
+        where: {
           name: 'Youth Connect',
-          description: 'Youth Connect Group by AFM Rzeszow',
-          ownerId: adminUser.id,
           organizationId: organization.id,
         },
       });
-      console.log('Created group: Youth Connect');
+      
+      if (oldGroup) {
+        // Update existing group name
+        group = await prisma.group.update({
+          where: { id: oldGroup.id },
+          data: {
+            name: 'AFM Youth Connect',
+            description: 'AFM Youth Connect Group by AFM Rzeszow',
+          },
+        });
+        console.log('Updated group name from "Youth Connect" to "AFM Youth Connect"');
+      } else {
+        // Create new group
+        group = await prisma.group.create({
+          data: {
+            name: 'AFM Youth Connect',
+            description: 'AFM Youth Connect Group by AFM Rzeszow',
+            ownerId: adminUser.id,
+            organizationId: organization.id,
+          },
+        });
+        console.log('Created group: AFM Youth Connect');
+      }
     } else {
-      console.log('Group already exists: Youth Connect');
+      console.log('Group already exists: AFM Youth Connect');
     }
 
-    // 4. Create chatroom settings for Youth Connect group
+    // 4. Create chatroom settings for AFM Youth Connect group
     let chatroomSettings = await prisma.chatroomSettings.findUnique({
       where: { groupId: group.id },
     });
@@ -70,10 +91,10 @@ async function main() {
           isActive: true,
         },
       });
-      console.log('Created chatroom settings for Youth Connect');
+      console.log('Created chatroom settings for AFM Youth Connect');
     }
 
-    // 5. Add all existing users as members of Youth Connect group
+    // 5. Add all existing users as members of AFM Youth Connect group
     const allUsers = await prisma.user.findMany({
       where: {
         NOT: {
@@ -87,7 +108,7 @@ async function main() {
     });
 
     if (allUsers.length > 0) {
-      console.log(`Adding ${allUsers.length} users to Youth Connect group...`);
+      console.log(`Adding ${allUsers.length} users to AFM Youth Connect group...`);
       
       for (const user of allUsers) {
         await prisma.groupMembership.create({
@@ -98,9 +119,9 @@ async function main() {
           },
         });
       }
-      console.log(`Added ${allUsers.length} users to Youth Connect group`);
+      console.log(`Added ${allUsers.length} users to AFM Youth Connect group`);
     } else {
-      console.log('All users are already members of Youth Connect');
+      console.log('All users are already members of AFM Youth Connect');
     }
 
     // 6. Make all users follow AFM Rzeszow organization
@@ -138,21 +159,21 @@ async function main() {
 
     // 7. Migrate or delete existing chat messages without groupId
     try {
-      // Find messages without groupId and assign them to Youth Connect group
-      const messagesWithoutGroup = await prisma.chatMessage.findMany({
-        where: { groupId: null },
-      });
+        // Find messages without groupId and assign them to AFM Youth Connect group
+        const messagesWithoutGroup = await prisma.chatMessage.findMany({
+          where: { groupId: null },
+        });
 
-      if (messagesWithoutGroup.length > 0) {
-        console.log(`Found ${messagesWithoutGroup.length} messages without groupId`);
-        console.log('Assigning them to Youth Connect group...');
+        if (messagesWithoutGroup.length > 0) {
+          console.log(`Found ${messagesWithoutGroup.length} messages without groupId`);
+          console.log('Assigning them to AFM Youth Connect group...');
         
         await prisma.chatMessage.updateMany({
           where: { groupId: null },
           data: { groupId: group.id },
         });
         
-        console.log(`Migrated ${messagesWithoutGroup.length} messages to Youth Connect group`);
+        console.log(`Migrated ${messagesWithoutGroup.length} messages to AFM Youth Connect group`);
       } else {
         console.log('No old messages to migrate');
       }
@@ -162,7 +183,7 @@ async function main() {
 
     console.log('\n✅ Initial data setup completed!');
     console.log(`   - Organization: AFM Rzeszow (ID: ${organization.id})`);
-    console.log(`   - Group: Youth Connect (ID: ${group.id})`);
+    console.log(`   - Group: AFM Youth Connect (ID: ${group.id})`);
     console.log(`   - Chatroom: Active`);
     console.log(`   - Members: ${await prisma.groupMembership.count({ where: { groupId: group.id } })}`);
     console.log(`   - Followers: ${await prisma.organizationFollow.count({ where: { organizationId: organization.id } })}`);

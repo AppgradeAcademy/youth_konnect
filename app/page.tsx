@@ -52,18 +52,30 @@ export default function Home() {
   const [editImageUrl, setEditImageUrl] = useState("");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
   const [deletingPost, setDeletingPost] = useState<string | null>(null);
+  const [feedFilter, setFeedFilter] = useState<'forYou' | 'following'>('forYou');
 
   useEffect(() => {
     const userData = localStorage.getItem("user");
     if (userData) {
       setUser(JSON.parse(userData));
     }
-    fetchPosts();
   }, []);
 
+  useEffect(() => {
+    // Fetch posts when user or filter changes
+    fetchPosts();
+  }, [feedFilter, user]);
+
   const fetchPosts = async () => {
+    setLoading(true);
     try {
-      const response = await fetch("/api/questions");
+      // Build query with filter if user is logged in
+      let url = "/api/questions";
+      if (user) {
+        url += `?userId=${user.id}&filter=${feedFilter}`;
+      }
+      
+      const response = await fetch(url);
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         console.error("Failed to fetch posts:", response.status, errorData);
@@ -275,15 +287,52 @@ export default function Home() {
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-4 pb-20 md:pb-4">
+      {user && (
+        <>
+          {/* Feed Filter Tabs */}
+          <div className="instagram-card mb-4 p-0">
+            <div className="flex border-b border-gray-200">
+              <button
+                onClick={() => setFeedFilter('forYou')}
+                className={`flex-1 px-4 py-3 text-center font-semibold transition-colors ${
+                  feedFilter === 'forYou'
+                    ? 'text-[#DC143C] border-b-2 border-[#DC143C]'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                }`}
+              >
+                For You
+              </button>
+              <button
+                onClick={() => setFeedFilter('following')}
+                className={`flex-1 px-4 py-3 text-center font-semibold transition-colors ${
+                  feedFilter === 'following'
+                    ? 'text-[#DC143C] border-b-2 border-[#DC143C]'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                }`}
+              >
+                Following
+              </button>
+            </div>
+          </div>
+        </>
+      )}
       {!loading && posts.length === 0 ? (
         <div className="instagram-card p-8 text-center">
-          <p className="text-gray-500 mb-4">No posts yet. Be the first to share something!</p>
-          <button
-            onClick={() => router.push("/create")}
-            className="inline-block bg-[#DC143C] text-white px-6 py-3 rounded-lg font-semibold hover:bg-[#B8122E] transition-colors"
-          >
-            Create First Post
-          </button>
+          <p className="text-gray-500 mb-4">
+            {user 
+              ? (feedFilter === 'forYou' 
+                  ? "No posts yet. Be the first to share something or join groups to see posts from members!"
+                  : "No posts from users you follow yet. Follow more users to see their posts!")
+              : "No posts yet. Be the first to share something!"}
+          </p>
+          {user && (
+            <button
+              onClick={() => router.push("/create")}
+              className="inline-block bg-[#DC143C] text-white px-6 py-3 rounded-lg font-semibold hover:bg-[#B8122E] transition-colors"
+            >
+              Create First Post
+            </button>
+          )}
         </div>
       ) : !loading && posts.length > 0 ? (
         <div className="space-y-6">
