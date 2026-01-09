@@ -7,8 +7,8 @@ import { ToastProvider } from "@/contexts/ToastContext";
 import { NotificationProvider } from "@/contexts/NotificationContext";
 
 export const metadata: Metadata = {
-  title: "Youth Connect - AFM Rzeszow",
-  description: "Church youth platform for AFM Rzeszow",
+  title: "Verse",
+  description: "Verse - Social platform for church youth communities. Connect, vote, chat, and grow together in faith. Youth Connect by AFM Rzeszow",
 };
 
 export default function RootLayout({

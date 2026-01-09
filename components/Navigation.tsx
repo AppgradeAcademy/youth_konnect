@@ -66,7 +66,7 @@ export default function Navigation() {
           <Link href="/" className="flex items-center gap-2 sm:gap-3 hover:opacity-80 transition-opacity flex-shrink-0 min-w-0">
             <Logo />
             <span className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-[#DC143C] to-[#B8122E] bg-clip-text text-transparent whitespace-nowrap">
-              Youth Connect
+              Verse
             </span>
           </Link>
           

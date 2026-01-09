@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { FaComments, FaPaperPlane, FaUser, FaEdit, FaCheck, FaTimes, FaFilter } from "react-icons/fa";
+import { FaComments, FaPaperPlane, FaUser, FaEdit, FaCheck, FaTimes, FaUsers } from "react-icons/fa";
 import { useToast } from "@/contexts/ToastContext";
 
 interface Message {
@@ -14,7 +14,28 @@ interface Message {
     name: string;
     username: string | null;
     email: string;
+    role: string;
   };
+  group?: {
+    id: string;
+    name: string;
+    organization?: {
+      id: string;
+      name: string;
+    };
+  };
+}
+
+interface Group {
+  id: string;
+  name: string;
+  description: string | null;
+  organization?: {
+    id: string;
+    name: string;
+  };
+  membershipRole: string;
+  memberCount: number;
 }
 
 export default function Chatroom() {
@@ -26,7 +47,8 @@ export default function Chatroom() {
   const [newUsername, setNewUsername] = useState("");
   const [editingUsername, setEditingUsername] = useState(false);
   const [chatroomActive, setChatroomActive] = useState(true);
-  const [filter, setFilter] = useState<'all' | 'followingAndChurch' | 'mine' | 'following' | 'church'>('followingAndChurch');
+  const [groups, setGroups] = useState<Group[]>([]);
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const { showToast } = useToast();
@@ -40,12 +62,13 @@ export default function Chatroom() {
     const userObj = JSON.parse(userData);
     setUser(userObj);
     setNewUsername(userObj.username || "");
-    fetchChatroomStatus();
+    fetchUserGroups();
     setLoading(false);
   }, [router]);
 
   useEffect(() => {
-    if (user) {
+    if (user && selectedGroupId) {
+      fetchChatroomStatus();
       fetchMessages();
       const interval = setInterval(() => {
         fetchChatroomStatus();
@@ -54,13 +77,39 @@ export default function Chatroom() {
 
       return () => clearInterval(interval);
     }
-  }, [user, filter]);
+  }, [user, selectedGroupId]);
+
+  const fetchUserGroups = async () => {
+    if (!user) return;
+    
+    try {
+      const response = await fetch(`/api/groups/user?userId=${user.id}`);
+      if (response.ok) {
+        const userGroups = await response.json();
+        if (Array.isArray(userGroups) && userGroups.length > 0) {
+          setGroups(userGroups);
+          // Auto-select first group (usually "Youth Connect")
+          if (!selectedGroupId) {
+            setSelectedGroupId(userGroups[0].id);
+          }
+        } else {
+          showToast("You are not a member of any groups yet", "info");
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching user groups:", error);
+    }
+  };
 
   const fetchChatroomStatus = async () => {
+    if (!selectedGroupId) return;
+    
     try {
-      const response = await fetch("/api/chatroom/status");
-      const data = await response.json();
-      setChatroomActive(data.isActive);
+      const response = await fetch(`/api/chatroom/status?groupId=${selectedGroupId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setChatroomActive(data.isActive);
+      }
     } catch (error) {
       console.error("Error fetching chatroom status:", error);
     }
@@ -84,11 +133,17 @@ export default function Chatroom() {
   };
 
   const fetchMessages = async () => {
-    if (!user) return;
+    if (!user || !selectedGroupId) return;
     
     try {
-      const response = await fetch(`/api/messages?userId=${user.id}&filter=${filter}`);
+      const response = await fetch(`/api/messages?userId=${user.id}&groupId=${selectedGroupId}`);
       if (!response.ok) {
+        if (response.status === 403) {
+          const error = await response.json();
+          showToast(error.error || "You don't have access to this chatroom", "error");
+          setMessages([]);
+          return;
+        }
         console.error("Failed to fetch messages:", response.status);
         setMessages([]);
         return;
@@ -138,7 +193,7 @@ export default function Chatroom() {
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newMessage.trim() || !user) return;
+    if (!newMessage.trim() || !user || !selectedGroupId) return;
     if (!chatroomActive) {
       showToast("Chatroom is currently offline. Please try again later.", "error");
       return;
@@ -151,6 +206,7 @@ export default function Chatroom() {
         body: JSON.stringify({
           userId: user.id,
           content: newMessage.trim(),
+          groupId: selectedGroupId,
         }),
       });
 
@@ -158,7 +214,8 @@ export default function Chatroom() {
         setNewMessage("");
         fetchMessages();
       } else {
-        showToast("Failed to send message", "error");
+        const error = await response.json();
+        showToast(error.error || "Failed to send message", "error");
       }
     } catch (error) {
       console.error("Error sending message:", error);
@@ -195,7 +252,20 @@ export default function Chatroom() {
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
           <div className="flex items-center gap-3">
             <FaComments className="text-3xl text-[#DC143C]" />
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Chatroom</h1>
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Chatroom</h1>
+              {selectedGroupId && groups.find(g => g.id === selectedGroupId) && (
+                <div className="flex items-center gap-2 mt-1">
+                  <FaUsers className="text-sm text-gray-500" />
+                  <span className="text-sm text-gray-600">
+                    {groups.find(g => g.id === selectedGroupId)?.name}
+                    {groups.find(g => g.id === selectedGroupId)?.organization && (
+                      <span className="text-gray-400"> • {groups.find(g => g.id === selectedGroupId)?.organization?.name}</span>
+                    )}
+                  </span>
+                </div>
+              )}
+            </div>
           </div>
           <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm font-semibold ${
             chatroomActive 
@@ -206,6 +276,24 @@ export default function Chatroom() {
             {chatroomActive ? "Active" : "Offline"}
           </div>
         </div>
+
+        {/* Group Selector */}
+        {groups.length > 0 && (
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">Select Group:</label>
+            <select
+              value={selectedGroupId || ""}
+              onChange={(e) => setSelectedGroupId(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#DC143C] focus:border-[#DC143C]"
+            >
+              {groups.map((group) => (
+                <option key={group.id} value={group.id}>
+                  {group.name} {group.organization && `(${group.organization.name})`} - {group.memberCount} members
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
         {/* Username Settings */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3">
@@ -251,115 +339,76 @@ export default function Chatroom() {
           )}
         </div>
 
-        {/* Filter Tabs */}
-        <div className="flex gap-2 overflow-x-auto pb-2 mt-4 border-b border-gray-200">
-          <button
-            onClick={() => setFilter('followingAndChurch')}
-            className={`px-3 py-1 text-sm font-medium whitespace-nowrap rounded-lg transition-colors ${
-              filter === 'followingAndChurch'
-                ? 'bg-[#DC143C] text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            Following & Church
-          </button>
-          <button
-            onClick={() => setFilter('mine')}
-            className={`px-3 py-1 text-sm font-medium whitespace-nowrap rounded-lg transition-colors ${
-              filter === 'mine'
-                ? 'bg-[#DC143C] text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            My Messages
-          </button>
-          <button
-            onClick={() => setFilter('following')}
-            className={`px-3 py-1 text-sm font-medium whitespace-nowrap rounded-lg transition-colors ${
-              filter === 'following'
-                ? 'bg-[#DC143C] text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            Following
-          </button>
-          <button
-            onClick={() => setFilter('church')}
-            className={`px-3 py-1 text-sm font-medium whitespace-nowrap rounded-lg transition-colors ${
-              filter === 'church'
-                ? 'bg-[#DC143C] text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            Church Only
-          </button>
-          <button
-            onClick={() => setFilter('all')}
-            className={`px-3 py-1 text-sm font-medium whitespace-nowrap rounded-lg transition-colors ${
-              filter === 'all'
-                ? 'bg-[#DC143C] text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            All
-          </button>
-        </div>
       </div>
 
       {/* Messages */}
-      <div className="instagram-card p-4 sm:p-6 mb-4">
-        <div className="max-h-96 overflow-y-auto space-y-4 mb-4">
-          {messages.length === 0 ? (
-            <div className="text-center text-gray-500 py-8">
-              <FaComments className="text-4xl mx-auto mb-2 opacity-50" />
-              <p>No messages yet. Start the conversation!</p>
-            </div>
-          ) : (
-            messages.map((message) => (
-              <div key={message.id} className="flex gap-3">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#DC143C] to-[#B8122E] flex items-center justify-center text-white font-semibold flex-shrink-0">
-                  {(displayName(message.user)[0] || "U").toUpperCase()}
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="font-semibold text-sm text-gray-900">
-                      {displayName(message.user)}
-                    </span>
-                    <span className="text-xs text-gray-500">
-                      {formatDate(message.createdAt)}
-                    </span>
-                  </div>
-                  <p className="text-sm text-gray-700">{message.content}</p>
-                </div>
+      {selectedGroupId ? (
+        <div className="instagram-card p-4 sm:p-6 mb-4">
+          <div className="max-h-96 overflow-y-auto space-y-4 mb-4">
+            {messages.length === 0 ? (
+              <div className="text-center text-gray-500 py-8">
+                <FaComments className="text-4xl mx-auto mb-2 opacity-50" />
+                <p>No messages yet. Start the conversation!</p>
               </div>
-            ))
-          )}
-          <div ref={messagesEndRef} />
-        </div>
-
-        {!chatroomActive && (
-          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-red-700 text-sm">⚠️ Chatroom is currently offline. You can view messages but cannot send new ones.</p>
+            ) : (
+              messages.map((message) => (
+                <div key={message.id} className="flex gap-3">
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#DC143C] to-[#B8122E] flex items-center justify-center text-white font-semibold flex-shrink-0">
+                    {(displayName(message.user)[0] || "U").toUpperCase()}
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="font-semibold text-sm text-gray-900">
+                        {displayName(message.user)}
+                      </span>
+                      {message.user.role === 'admin' && (
+                        <span className="text-xs bg-[#DC143C] text-white px-2 py-0.5 rounded">Admin</span>
+                      )}
+                      <span className="text-xs text-gray-500">
+                        {formatDate(message.createdAt)}
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-700">{message.content}</p>
+                  </div>
+                </div>
+              ))
+            )}
+            <div ref={messagesEndRef} />
           </div>
-        )}
-        <form onSubmit={handleSendMessage} className="flex gap-2">
-          <input
-            type="text"
-            value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
-            placeholder={chatroomActive ? "Type your message..." : "Chatroom is offline"}
-            disabled={!chatroomActive}
-            className="flex-1 px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#DC143C] focus:border-[#DC143C] disabled:opacity-50 disabled:cursor-not-allowed"
-          />
-          <button
-            type="submit"
-            disabled={!chatroomActive}
-            className="bg-[#DC143C] text-white px-4 py-2 rounded-lg font-semibold hover:bg-[#B8122E] transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <FaPaperPlane />
-          </button>
-        </form>
-      </div>
+
+          {!chatroomActive && (
+            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-red-700 text-sm">⚠️ Chatroom is currently offline. You can view messages but cannot send new ones.</p>
+            </div>
+          )}
+          <form onSubmit={handleSendMessage} className="flex gap-2">
+            <input
+              type="text"
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+              placeholder={chatroomActive ? "Type your message..." : "Chatroom is offline"}
+              disabled={!chatroomActive}
+              className="flex-1 px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#DC143C] focus:border-[#DC143C] disabled:opacity-50 disabled:cursor-not-allowed"
+            />
+            <button
+              type="submit"
+              disabled={!chatroomActive}
+              className="bg-[#DC143C] text-white px-4 py-2 rounded-lg font-semibold hover:bg-[#B8122E] transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <FaPaperPlane />
+            </button>
+          </form>
+        </div>
+      ) : (
+        <div className="instagram-card p-4 sm:p-6 mb-4 text-center">
+          <FaComments className="text-4xl mx-auto mb-2 opacity-50 text-gray-400" />
+          <p className="text-gray-500">
+            {groups.length === 0 
+              ? "You are not a member of any groups yet." 
+              : "Please select a group to view messages."}
+          </p>
+        </div>
+      )}
     </div>
   );
 }

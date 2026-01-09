@@ -1,69 +1,52 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
-// GET all messages with optional filtering
+// GET all messages for a group (group-based chatroom like MXit)
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
     const userId = searchParams.get('userId'); // Current user ID
-    const filter = searchParams.get('filter') || 'all'; // 'all', 'following', 'church', 'mine'
+    const groupId = searchParams.get('groupId'); // Group ID (required for group-based chat)
 
-    let whereClause: any = {};
+    if (!groupId) {
+      // During migration, groupId might be null - return empty array
+      return NextResponse.json([]);
+    }
 
+    // Verify user is a member of the group
     if (userId) {
-      if (filter === 'mine') {
-        // Only messages from current user
-        whereClause.userId = userId;
-      } else if (filter === 'following') {
-        // Messages from users the current user follows
-        const followingIds = await prisma.userFollow.findMany({
-          where: { followerId: userId },
-          select: { followingId: true },
-        });
-        const followingSet = followingIds.map(f => f.followingId);
-        if (followingSet.length > 0) {
-          whereClause.userId = { in: followingSet };
-        } else {
-          // No one followed, return empty array
-          return NextResponse.json([]);
-        }
-      } else if (filter === 'church') {
-        // Messages from admins (church)
-        const adminUsers = await prisma.user.findMany({
-          where: { role: 'admin' },
-          select: { id: true },
-        });
-        const adminIds = adminUsers.map(u => u.id);
-        if (adminIds.length > 0) {
-          whereClause.userId = { in: adminIds };
-        } else {
-          return NextResponse.json([]);
-        }
-      } else if (filter === 'followingAndChurch') {
-        // Messages from following + church + own
-        const followingIds = await prisma.userFollow.findMany({
-          where: { followerId: userId },
-          select: { followingId: true },
-        });
-        const followingSet = followingIds.map(f => f.followingId);
-        
-        const adminUsers = await prisma.user.findMany({
-          where: { role: 'admin' },
-          select: { id: true },
-        });
-        const adminIds = adminUsers.map(u => u.id);
-        
-        const allIds = [...followingSet, ...adminIds, userId];
-        const uniqueIds = [...new Set(allIds)];
-        
-        if (uniqueIds.length > 0) {
-          whereClause.userId = { in: uniqueIds };
-        }
+      const membership = await prisma.groupMembership.findUnique({
+        where: {
+          userId_groupId: {
+            userId: userId,
+            groupId: groupId,
+          },
+        },
+      });
+
+      if (!membership) {
+        return NextResponse.json(
+          { error: 'You are not a member of this group' },
+          { status: 403 }
+        );
       }
     }
 
+    // Check if chatroom is active for this group
+    const chatroomSettings = await prisma.chatroomSettings.findUnique({
+      where: { groupId },
+    });
+
+    if (chatroomSettings && !chatroomSettings.isActive) {
+      return NextResponse.json(
+        { error: 'Chatroom is currently inactive' },
+        { status: 403 }
+      );
+    }
+
+    // Get messages for this group
     const messages = await prisma.chatMessage.findMany({
-      where: whereClause,
+      where: { groupId },
       include: {
         user: {
           select: {
@@ -72,6 +55,18 @@ export async function GET(request: NextRequest) {
             username: true,
             email: true,
             role: true,
+          },
+        },
+        group: {
+          select: {
+            id: true,
+            name: true,
+            organization: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
           },
         },
       },
@@ -93,15 +88,44 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST create message
+// POST create message in a group
 export async function POST(request: NextRequest) {
   try {
-    const { userId, content } = await request.json();
+    const { userId, content, groupId } = await request.json();
 
-    if (!userId || !content) {
+    if (!userId || !content || !groupId) {
       return NextResponse.json(
-        { error: 'User ID and content are required' },
+        { error: 'User ID, content, and group ID are required' },
         { status: 400 }
+      );
+    }
+
+    // Verify user is a member of the group
+    const membership = await prisma.groupMembership.findUnique({
+      where: {
+        userId_groupId: {
+          userId: userId,
+          groupId: groupId,
+        },
+      },
+    });
+
+    if (!membership) {
+      return NextResponse.json(
+        { error: 'You are not a member of this group' },
+        { status: 403 }
+      );
+    }
+
+    // Check if chatroom is active
+    const chatroomSettings = await prisma.chatroomSettings.findUnique({
+      where: { groupId },
+    });
+
+    if (chatroomSettings && !chatroomSettings.isActive) {
+      return NextResponse.json(
+        { error: 'Chatroom is currently inactive' },
+        { status: 403 }
       );
     }
 
@@ -109,6 +133,7 @@ export async function POST(request: NextRequest) {
       data: {
         userId,
         content,
+        groupId,
       },
       include: {
         user: {
@@ -118,6 +143,18 @@ export async function POST(request: NextRequest) {
             username: true,
             email: true,
             role: true,
+          },
+        },
+        group: {
+          select: {
+            id: true,
+            name: true,
+            organization: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
           },
         },
       },

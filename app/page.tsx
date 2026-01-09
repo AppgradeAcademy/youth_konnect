@@ -258,7 +258,7 @@ export default function Home() {
     return (
       <div className="max-w-2xl mx-auto px-4 py-8">
         <div className="instagram-card p-8 text-center">
-          <h2 className="text-2xl font-bold text-gray-800 mb-4">Welcome to Youth Connect</h2>
+          <h2 className="text-2xl font-bold text-gray-800 mb-4">Welcome to Verse</h2>
           <p className="text-gray-600 mb-6">Please log in to see posts from our community</p>
           <button
             onClick={() => router.push("/login")}

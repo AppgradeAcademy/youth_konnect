@@ -10,7 +10,7 @@ export default function Banner() {
       {!imageError && (
         <img 
           src="/images/banner.png" 
-          alt="Youth Connect Banner" 
+          alt="Verse Banner" 
           className="w-full h-auto object-contain"
           onError={() => setImageError(true)}
         />
@@ -18,9 +18,9 @@ export default function Banner() {
       {imageError && (
         <div className="p-12 text-center bg-gradient-to-r from-[#DC143C] to-[#003F7F] text-white">
           <h1 className="text-4xl md:text-5xl font-bold mb-4">
-            Welcome to Youth Connect
+            Welcome to Verse
           </h1>
-          <p className="text-2xl md:text-3xl mb-2">AFM Rzeszow</p>
+          <p className="text-2xl md:text-3xl mb-2">Verse - Youth Connect by AFM Rzeszow</p>
           <p className="text-lg md:text-xl mt-4 opacity-90">
             Connect, vote, chat, and grow together in faith
           </p>

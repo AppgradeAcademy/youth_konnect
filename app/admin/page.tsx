@@ -493,14 +493,25 @@ export default function AdminDashboard() {
 
   const fetchChatroomData = async () => {
     try {
-      const [messagesRes, questionsRes] = await Promise.all([
-        fetch("/api/messages"),
-        fetch("/api/questions"),
-      ]);
-      const messages = await messagesRes.json();
-      const questions = await questionsRes.json();
-      setChatroomMessages(messages);
-      setChatroomQuestions(questions);
+      // Fetch groups first, then messages for each group
+      const groupsRes = await fetch("/api/groups/user?userId=" + user?.id);
+      if (groupsRes.ok) {
+        const groups = await groupsRes.json();
+        if (groups.length > 0) {
+          // Get messages for the first group (or all groups)
+          const messagesRes = await fetch(`/api/messages?userId=${user?.id}&groupId=${groups[0].id}`);
+          if (messagesRes.ok) {
+            const messages = await messagesRes.json();
+            setChatroomMessages(Array.isArray(messages) ? messages : []);
+          }
+        }
+      }
+      // Fetch questions (posts) - these are separate from group messages
+      const questionsRes = await fetch("/api/questions");
+      if (questionsRes.ok) {
+        const questions = await questionsRes.json();
+        setChatroomQuestions(Array.isArray(questions) ? questions : []);
+      }
     } catch (error) {
       console.error("Error fetching chatroom data:", error);
     }
@@ -508,9 +519,19 @@ export default function AdminDashboard() {
 
   const fetchChatroomStatus = async () => {
     try {
-      const response = await fetch("/api/chatroom/status");
-      const data = await response.json();
-      setChatroomStatus(data.isActive);
+      // For admin, we'll need to fetch status for all groups or a specific group
+      // For now, we'll get the first group (Youth Connect) - this needs to be enhanced
+      const response = await fetch("/api/groups/user?userId=" + user?.id);
+      if (response.ok) {
+        const groups = await response.json();
+        if (groups.length > 0) {
+          const statusResponse = await fetch(`/api/chatroom/status?groupId=${groups[0].id}`);
+          if (statusResponse.ok) {
+            const data = await statusResponse.json();
+            setChatroomStatus(data.isActive);
+          }
+        }
+      }
     } catch (error) {
       console.error("Error fetching chatroom status:", error);
     }
@@ -518,10 +539,22 @@ export default function AdminDashboard() {
 
   const handleToggleChatroom = async () => {
     try {
+      // Get the first group (Youth Connect) to toggle
+      const groupsResponse = await fetch("/api/groups/user?userId=" + user?.id);
+      if (!groupsResponse.ok) {
+        showToast("Failed to fetch groups", "error");
+        return;
+      }
+      const groups = await groupsResponse.json();
+      if (groups.length === 0) {
+        showToast("No groups found", "error");
+        return;
+      }
+      
       const response = await fetch("/api/chatroom/status", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ isActive: !chatroomStatus }),
+        body: JSON.stringify({ isActive: !chatroomStatus, groupId: groups[0].id }),
       });
 
       if (response.ok) {

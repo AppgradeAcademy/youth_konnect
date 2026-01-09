@@ -25,10 +25,10 @@ export default function About() {
           <section className="glass rounded-xl p-4 sm:p-6">
             <div className="flex items-center gap-3 mb-3">
               <FaUsers className="text-xl sm:text-2xl text-indigo-600" />
-              <h2 className="text-xl sm:text-2xl font-bold text-gray-800">Youth Connect Platform</h2>
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-800">Verse Platform</h2>
             </div>
             <p className="text-base sm:text-lg leading-relaxed">
-              Youth Connect is our dedicated platform designed to bring our church youth community together.
+              Verse is our dedicated platform designed to bring our church youth community together.
               This platform enables members to engage in meaningful ways through voting, chatting, and sharing
               questions. Our goal is to foster a sense of community and encourage active participation among
               our youth members.

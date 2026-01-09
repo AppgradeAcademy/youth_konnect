@@ -20,12 +20,16 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  votes     Vote[]
-  messages  ChatMessage[]
-  questions Question[]
-  answers   Answer[]
-  following UserFollow[]  @relation("UserFollows")
-  followers UserFollow[]  @relation("UserFollowers")
+  votes          Vote[]
+  messages       ChatMessage[]
+  questions      Question[]
+  answers        Answer[]
+  following      UserFollow[]      @relation("UserFollows")
+  followers      UserFollow[]      @relation("UserFollowers")
+  groupMemberships GroupMembership[]
+  ownedGroups    Group[]           @relation("GroupOwner")
+  ownedOrganizations Organization[] @relation("OrganizationOwner")
+  followingOrgs  OrganizationFollow[]
 }
 
 model UserFollow {
@@ -88,9 +92,13 @@ model ChatMessage {
   id        String   @id @default(cuid())
   content   String
   userId    String
+  groupId   String?  // Group-based chatroom (like MXit) - nullable for migration
   createdAt DateTime @default(now())
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group Group? @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  
+  @@index([groupId, createdAt])
 }
 
 model Question {
@@ -130,8 +138,69 @@ model Event {
   updatedAt DateTime @updatedAt
 }
 
+model Organization {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  ownerId     String   // User who created the organization
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  owner   User                @relation("OrganizationOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  groups  Group[]
+  followers OrganizationFollow[]
+}
+
+model OrganizationFollow {
+  id             String   @id @default(cuid())
+  userId         String
+  organizationId String
+  createdAt      DateTime @default(now())
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, organizationId])
+  @@index([userId])
+  @@index([organizationId])
+}
+
+model Group {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  ownerId     String   // User who created the group (usually org admin)
+  organizationId String? // Optional: group can belong to an organization
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  owner         User            @relation("GroupOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  organization  Organization?   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  members       GroupMembership[]
+  messages      ChatMessage[]
+  chatroomSettings ChatroomSettings?
+}
+
+model GroupMembership {
+  id        String   @id @default(cuid())
+  userId    String
+  groupId   String
+  role      String   @default("member") // "member" or "admin"
+  joinedAt  DateTime @default(now())
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, groupId])
+  @@index([userId])
+  @@index([groupId])
+}
+
 model ChatroomSettings {
-  id        String   @id @default("main")
+  id        String   @id @default(cuid())
+  groupId   String   @unique // One settings per group
   isActive  Boolean  @default(true)
   updatedAt DateTime @updatedAt
+
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
 }

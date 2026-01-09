@@ -10,12 +10,12 @@ export default function Logo() {
       {!logoError ? (
         <img 
           src="/images/logo.png" 
-          alt="Youth Connect Logo" 
+          alt="Verse Logo" 
           className="w-full h-full object-contain p-1"
           onError={() => setLogoError(true)}
         />
       ) : (
-        <span className="text-indigo-600 font-bold text-xl">YC</span>
+        <span className="text-indigo-600 font-bold text-xl">V</span>
       )}
     </div>
   );

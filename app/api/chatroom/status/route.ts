@@ -1,18 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
-// GET chatroom status
-export async function GET() {
+// GET chatroom status for a group
+export async function GET(request: NextRequest) {
   try {
-    // Check if ChatroomSettings exists, if not create with default
+    const searchParams = request.nextUrl.searchParams;
+    const groupId = searchParams.get('groupId');
+
+    if (!groupId) {
+      return NextResponse.json(
+        { error: 'Group ID is required' },
+        { status: 400 }
+      );
+    }
+
+    // Check if ChatroomSettings exists for this group, if not create with default
     let settings = await prisma.chatroomSettings.findUnique({
-      where: { id: 'main' },
+      where: { groupId },
     });
 
     if (!settings) {
       settings = await prisma.chatroomSettings.create({
         data: {
-          id: 'main',
+          groupId,
           isActive: true,
         },
       });
@@ -28,16 +38,23 @@ export async function GET() {
   }
 }
 
-// PATCH update chatroom status
+// PATCH update chatroom status for a group
 export async function PATCH(request: NextRequest) {
   try {
-    const { isActive } = await request.json();
+    const { isActive, groupId } = await request.json();
+
+    if (!groupId) {
+      return NextResponse.json(
+        { error: 'Group ID is required' },
+        { status: 400 }
+      );
+    }
 
     const settings = await prisma.chatroomSettings.upsert({
-      where: { id: 'main' },
+      where: { groupId },
       update: { isActive: Boolean(isActive) },
       create: {
-        id: 'main',
+        groupId,
         isActive: Boolean(isActive),
       },
     });
