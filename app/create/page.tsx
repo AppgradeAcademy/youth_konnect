@@ -71,7 +71,6 @@ export default function CreatePost() {
   const [imagePreview, setImagePreview] = useState("");
   const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [chatroomActive, setChatroomActive] = useState(true);
 
   useEffect(() => {
     const userData = localStorage.getItem("user");
@@ -80,18 +79,7 @@ export default function CreatePost() {
       return;
     }
     setUser(JSON.parse(userData));
-    fetchChatroomStatus();
   }, [router]);
-
-  const fetchChatroomStatus = async () => {
-    try {
-      const response = await fetch("/api/chatroom/status");
-      const data = await response.json();
-      setChatroomActive(data.isActive);
-    } catch (error) {
-      console.error("Error fetching chatroom status:", error);
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -108,10 +96,6 @@ export default function CreatePost() {
       return;
     }
     
-    if (!chatroomActive) {
-      showToast("Chatroom is currently offline. Please try again later.", "error");
-      return;
-    }
 
     setSubmitting(true);
     try {
@@ -177,11 +161,6 @@ export default function CreatePost() {
       <div className="instagram-card p-4 sm:p-6">
         <h1 className="text-2xl font-bold text-gray-900 mb-6">Create New Post</h1>
 
-        {!chatroomActive && (
-          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-red-700 text-sm">⚠️ Chatroom is currently offline. You cannot create posts at this time.</p>
-          </div>
-        )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -194,7 +173,6 @@ export default function CreatePost() {
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Write a caption..."
               required
-              disabled={!chatroomActive}
               className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#DC143C] focus:border-[#DC143C] disabled:opacity-50 disabled:cursor-not-allowed"
             />
           </div>
@@ -208,7 +186,6 @@ export default function CreatePost() {
               onChange={(e) => setContent(e.target.value)}
               placeholder="Add more details (optional)..."
               rows={4}
-              disabled={!chatroomActive}
               className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#DC143C] focus:border-[#DC143C] disabled:opacity-50 disabled:cursor-not-allowed resize-none"
             />
           </div>
@@ -276,7 +253,7 @@ export default function CreatePost() {
                   }
                 }}
                 className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#DC143C] focus:border-[#DC143C]"
-                disabled={uploading || !chatroomActive}
+                disabled={uploading}
               />
             ) : (
               <div className="relative">
@@ -331,7 +308,7 @@ export default function CreatePost() {
 
           <button
             type="submit"
-            disabled={!chatroomActive || uploading || submitting}
+            disabled={uploading || submitting}
             className="w-full bg-[#DC143C] text-white px-6 py-3 rounded-lg font-semibold hover:bg-[#B8122E] transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <FaPaperPlane /> {submitting ? "Posting..." : uploading ? "Uploading..." : "Post"}
