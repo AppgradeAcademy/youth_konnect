@@ -74,6 +74,7 @@ export default function AdminDashboard() {
   const [chatroomMessages, setChatroomMessages] = useState<any[]>([]);
   const [chatroomQuestions, setChatroomQuestions] = useState<any[]>([]);
   const [chatroomStatus, setChatroomStatus] = useState(true);
+  const [adminUser, setAdminUser] = useState<any>(null);
   const router = useRouter();
   const { showToast } = useToast();
 
@@ -85,6 +86,18 @@ export default function AdminDashboard() {
     const adminAuth = sessionStorage.getItem("adminAuth");
     if (adminAuth === "true") {
       setIsAuthenticated(true);
+      // Get admin user from localStorage or fetch admin user
+      const userData = localStorage.getItem("user");
+      if (userData) {
+        try {
+          const userObj = JSON.parse(userData);
+          if (userObj.role === "admin") {
+            setAdminUser(userObj);
+          }
+        } catch (e) {
+          console.error("Error parsing user data:", e);
+        }
+      }
       fetchCategories();
       fetchEvents();
       fetchChatroomStatus();
@@ -493,13 +506,43 @@ export default function AdminDashboard() {
 
   const fetchChatroomData = async () => {
     try {
+      // Get admin user ID - try from state first, then localStorage, then use first admin from users
+      let userId = adminUser?.id;
+      if (!userId) {
+        const userData = localStorage.getItem("user");
+        if (userData) {
+          try {
+            const userObj = JSON.parse(userData);
+            if (userObj.role === "admin") {
+              userId = userObj.id;
+              setAdminUser(userObj);
+            }
+          } catch (e) {
+            console.error("Error parsing user data:", e);
+          }
+        }
+      }
+      
+      // If still no userId, try to get from users array (first admin)
+      if (!userId && users.length > 0) {
+        const adminUserFromList = users.find((u: any) => u.role === "admin");
+        if (adminUserFromList) {
+          userId = adminUserFromList.id;
+        }
+      }
+
+      if (!userId) {
+        console.error("No admin user found");
+        return;
+      }
+
       // Fetch groups first, then messages for each group
-      const groupsRes = await fetch("/api/groups/user?userId=" + user?.id);
+      const groupsRes = await fetch("/api/groups/user?userId=" + userId);
       if (groupsRes.ok) {
         const groups = await groupsRes.json();
         if (groups.length > 0) {
           // Get messages for the first group (or all groups)
-          const messagesRes = await fetch(`/api/messages?userId=${user?.id}&groupId=${groups[0].id}`);
+          const messagesRes = await fetch(`/api/messages?userId=${userId}&groupId=${groups[0].id}`);
           if (messagesRes.ok) {
             const messages = await messagesRes.json();
             setChatroomMessages(Array.isArray(messages) ? messages : []);
@@ -519,9 +562,38 @@ export default function AdminDashboard() {
 
   const fetchChatroomStatus = async () => {
     try {
+      // Get admin user ID
+      let userId = adminUser?.id;
+      if (!userId) {
+        const userData = localStorage.getItem("user");
+        if (userData) {
+          try {
+            const userObj = JSON.parse(userData);
+            if (userObj.role === "admin") {
+              userId = userObj.id;
+              setAdminUser(userObj);
+            }
+          } catch (e) {
+            console.error("Error parsing user data:", e);
+          }
+        }
+      }
+      
+      if (!userId && users.length > 0) {
+        const adminUserFromList = users.find((u: any) => u.role === "admin");
+        if (adminUserFromList) {
+          userId = adminUserFromList.id;
+        }
+      }
+
+      if (!userId) {
+        console.error("No admin user found for chatroom status");
+        return;
+      }
+
       // For admin, we'll need to fetch status for all groups or a specific group
       // For now, we'll get the first group (Youth Connect) - this needs to be enhanced
-      const response = await fetch("/api/groups/user?userId=" + user?.id);
+      const response = await fetch("/api/groups/user?userId=" + userId);
       if (response.ok) {
         const groups = await response.json();
         if (groups.length > 0) {
@@ -539,8 +611,37 @@ export default function AdminDashboard() {
 
   const handleToggleChatroom = async () => {
     try {
+      // Get admin user ID
+      let userId = adminUser?.id;
+      if (!userId) {
+        const userData = localStorage.getItem("user");
+        if (userData) {
+          try {
+            const userObj = JSON.parse(userData);
+            if (userObj.role === "admin") {
+              userId = userObj.id;
+              setAdminUser(userObj);
+            }
+          } catch (e) {
+            console.error("Error parsing user data:", e);
+          }
+        }
+      }
+      
+      if (!userId && users.length > 0) {
+        const adminUserFromList = users.find((u: any) => u.role === "admin");
+        if (adminUserFromList) {
+          userId = adminUserFromList.id;
+        }
+      }
+
+      if (!userId) {
+        showToast("No admin user found", "error");
+        return;
+      }
+
       // Get the first group (Youth Connect) to toggle
-      const groupsResponse = await fetch("/api/groups/user?userId=" + user?.id);
+      const groupsResponse = await fetch("/api/groups/user?userId=" + userId);
       if (!groupsResponse.ok) {
         showToast("Failed to fetch groups", "error");
         return;
