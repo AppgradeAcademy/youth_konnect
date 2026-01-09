@@ -48,16 +48,18 @@ model UserFollow {
 }
 
 model Category {
-  id          String   @id @default(cuid())
-  name        String
-  description String?
-  imageUrl    String?
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id             String   @id @default(cuid())
+  name           String
+  description    String?
+  imageUrl       String?
+  isActive       Boolean  @default(true)
+  organizationId String?  // Optional: link poll to organization
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
-  votes       Vote[]
-  contestants Contestant[]
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  votes         Vote[]
+  contestants   Contestant[]
 }
 
 model Contestant {
@@ -150,6 +152,7 @@ model Organization {
   owner   User                @relation("OrganizationOwner", fields: [ownerId], references: [id], onDelete: Cascade)
   groups  Group[]
   followers OrganizationFollow[]
+  categories Category[]
 }
 
 model OrganizationFollow {

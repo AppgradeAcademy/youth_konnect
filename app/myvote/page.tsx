@@ -52,7 +52,17 @@ export default function MyVote() {
 
   const fetchCategories = async () => {
     try {
-      const response = await fetch("/api/categories");
+      // Get AFM Rzeszow organization ID and fetch its polls
+      const orgResponse = await fetch("/api/organizations");
+      let orgId = null;
+      if (orgResponse.ok) {
+        const orgs = await orgResponse.json();
+        const afmOrg = orgs.find((o: any) => o.name === "AFM Rzeszow");
+        if (afmOrg) orgId = afmOrg.id;
+      }
+      
+      const url = orgId ? `/api/categories?orgId=${orgId}` : "/api/categories";
+      const response = await fetch(url);
       if (!response.ok) {
         console.error("Failed to fetch categories:", response.status);
         setCategories([]);
@@ -167,12 +177,22 @@ export default function MyVote() {
     }
 
     try {
+      // Get AFM Rzeszow organization ID
+      let orgId = null;
+      const orgResponse = await fetch("/api/organizations");
+      if (orgResponse.ok) {
+        const orgs = await orgResponse.json();
+        const afmOrg = orgs.find((o: any) => o.name === "AFM Rzeszow");
+        if (afmOrg) orgId = afmOrg.id;
+      }
+      
       const response = await fetch("/api/categories", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: newCategoryName,
           description: newCategoryDesc || null,
+          organizationId: orgId,
         }),
       });
 

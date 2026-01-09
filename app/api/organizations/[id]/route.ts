@@ -6,36 +6,31 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const userId = params.id;
+    const organizationId = params.id;
 
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        id: true,
-        name: true,
-        username: true,
-        email: true,
-        createdAt: true,
+    const organization = await prisma.organization.findUnique({
+      where: { id: organizationId },
+      include: {
         _count: {
           select: {
             followers: true,
-            following: true,
-            questions: true,
+            groups: true,
+            categories: true,
           },
         },
       },
     });
 
-    if (!user) {
+    if (!organization) {
       return NextResponse.json(
-        { error: 'User not found' },
+        { error: 'Organization not found' },
         { status: 404 }
       );
     }
 
-    return NextResponse.json(user);
+    return NextResponse.json(organization);
   } catch (error: any) {
-    console.error('Error fetching user:', error);
+    console.error('Error fetching organization:', error);
     return NextResponse.json(
       { 
         error: 'Internal server error',
@@ -45,3 +40,4 @@ export async function GET(
     );
   }
 }
+

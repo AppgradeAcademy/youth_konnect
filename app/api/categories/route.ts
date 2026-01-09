@@ -7,9 +7,22 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const all = searchParams.get('all') === 'true';
 
+    const orgId = searchParams.get('orgId');
+    
+    const whereClause: any = all ? {} : { isActive: true };
+    if (orgId) {
+      whereClause.organizationId = orgId;
+    }
+    
     const categories = await prisma.category.findMany({
-      where: all ? {} : { isActive: true },
+      where: whereClause,
       include: {
+        organization: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
         _count: {
           select: { votes: true },
         },
@@ -34,7 +47,7 @@ export async function GET(request: NextRequest) {
 // POST create new category (admin only)
 export async function POST(request: NextRequest) {
   try {
-    const { name, description, imageUrl } = await request.json();
+    const { name, description, imageUrl, organizationId } = await request.json();
 
     if (!name) {
       return NextResponse.json(
@@ -49,6 +62,7 @@ export async function POST(request: NextRequest) {
         description: description || null,
         imageUrl: imageUrl || null,
         isActive: true,
+        organizationId: organizationId || null,
       },
     });
 

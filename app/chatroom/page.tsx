@@ -121,18 +121,24 @@ export default function Chatroom() {
         console.log("Rooms data received:", data);
         if (Array.isArray(data)) {
           console.log(`Found ${data.length} rooms`);
-          setRooms(data);
+          // Ensure we have valid room data
+          const validRooms = data.filter(room => room && room.id);
+          console.log(`Valid rooms: ${validRooms.length}`);
+          setRooms(validRooms);
         } else {
           console.error("Rooms data is not an array:", data);
+          setRooms([]);
         }
       } else {
         const errorData = await response.json().catch(() => ({}));
         console.error("Failed to fetch rooms:", response.status, errorData);
-        showToast("Failed to load chatrooms", "error");
+        showToast(errorData.error || "Failed to load chatrooms", "error");
+        setRooms([]);
       }
     } catch (error) {
       console.error("Error fetching rooms:", error);
       showToast("Error loading chatrooms", "error");
+      setRooms([]);
     }
   };
 

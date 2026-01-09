@@ -397,7 +397,10 @@ export default function Home() {
                   <div className="space-y-3">
                     {suggestions.users.map((suggestedUser: any) => (
                       <div key={suggestedUser.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                        <div className="flex items-center gap-3">
+                        <div 
+                          className="flex items-center gap-3 cursor-pointer hover:opacity-80"
+                          onClick={() => router.push(`/user/${suggestedUser.id}`)}
+                        >
                           <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#DC143C] to-[#B8122E] flex items-center justify-center text-white font-semibold">
                             {(suggestedUser.name[0] || "U").toUpperCase()}
                           </div>

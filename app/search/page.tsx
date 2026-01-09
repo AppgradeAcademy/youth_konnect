@@ -365,7 +365,10 @@ export default function SearchUsers() {
               key={userItem.id}
               className="instagram-card p-4 flex items-center justify-between"
             >
-              <div className="flex items-center gap-3 flex-1">
+              <div 
+                className="flex items-center gap-3 flex-1 cursor-pointer hover:opacity-80"
+                onClick={() => router.push(`/user/${userItem.id}`)}
+              >
                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#DC143C] to-[#B8122E] flex items-center justify-center text-white font-semibold">
                   {(userItem.name[0] || "U").toUpperCase()}
                 </div>
@@ -428,7 +431,10 @@ export default function SearchUsers() {
               key={org.id}
               className="instagram-card p-4 flex items-center justify-between"
             >
-              <div className="flex items-center gap-3 flex-1">
+              <div 
+                className="flex items-center gap-3 flex-1 cursor-pointer hover:opacity-80"
+                onClick={() => router.push(`/organization/${org.id}`)}
+              >
                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-semibold">
                   <FaBuilding />
                 </div>

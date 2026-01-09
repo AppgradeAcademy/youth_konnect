@@ -296,6 +296,15 @@ export default function AdminDashboard() {
     setLoading(true);
 
     try {
+      // Get AFM Rzeszow organization ID
+      let orgId = null;
+      const orgResponse = await fetch("/api/organizations");
+      if (orgResponse.ok) {
+        const orgs = await orgResponse.json();
+        const afmOrg = orgs.find((o: any) => o.name === "AFM Rzeszow");
+        if (afmOrg) orgId = afmOrg.id;
+      }
+      
       const response = await fetch("/api/categories", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -303,6 +312,7 @@ export default function AdminDashboard() {
           name: newCategoryName,
           description: newCategoryDesc || null,
           imageUrl: newCategoryImageUrl || null,
+          organizationId: orgId,
         }),
       });
 
