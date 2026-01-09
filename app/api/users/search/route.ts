@@ -28,26 +28,51 @@ export async function GET(request: NextRequest) {
         }
 
         // Get all users except current user and those already followed
-        const allUsers = await prisma.user.findMany({
-          where: {
-            id: { not: userId },
-          },
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            username: true,
-            role: true,
-            createdAt: true,
-            _count: {
-              select: {
-                followers: true,
-                following: true,
+        let allUsers: any[] = [];
+        try {
+          allUsers = await prisma.user.findMany({
+            where: {
+              id: { not: userId },
+            },
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              username: true,
+              role: true,
+              createdAt: true,
+              _count: {
+                select: {
+                  followers: true,
+                  following: true,
+                },
               },
             },
-          },
-          take: 50, // Get more to filter
-        });
+            take: 50, // Get more to filter
+          });
+        } catch (error: any) {
+          // If _count fails (tables don't exist), try without it
+          console.warn('Error fetching users with _count:', error?.message);
+          allUsers = await prisma.user.findMany({
+            where: {
+              id: { not: userId },
+            },
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              username: true,
+              role: true,
+              createdAt: true,
+            },
+            take: 50,
+          });
+          // Add empty _count for compatibility
+          allUsers = allUsers.map(u => ({
+            ...u,
+            _count: { followers: 0, following: 0 },
+          }));
+        }
 
         // Filter to users not yet followed, prioritize by follower count (popular users first)
         const notFollowedUsers = allUsers
@@ -75,59 +100,114 @@ export async function GET(request: NextRequest) {
         }
       } else {
         // No userId, just return most popular users
-        suggestedUsers = await prisma.user.findMany({
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            username: true,
-            role: true,
-            createdAt: true,
-            _count: {
-              select: {
-                followers: true,
-                following: true,
+        try {
+          suggestedUsers = await prisma.user.findMany({
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              username: true,
+              role: true,
+              createdAt: true,
+              _count: {
+                select: {
+                  followers: true,
+                  following: true,
+                },
               },
             },
-          },
-          take: 10,
-          orderBy: { createdAt: 'desc' },
-        });
+            take: 10,
+            orderBy: { createdAt: 'desc' },
+          });
+        } catch (error: any) {
+          // If _count fails, try without it
+          console.warn('Error fetching users with _count:', error?.message);
+          const usersWithoutCount = await prisma.user.findMany({
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              username: true,
+              role: true,
+              createdAt: true,
+            },
+            take: 10,
+            orderBy: { createdAt: 'desc' },
+          });
+          suggestedUsers = usersWithoutCount.map(u => ({
+            ...u,
+            _count: { followers: 0, following: 0 },
+          }));
+        }
       }
 
       return NextResponse.json(suggestedUsers);
     }
 
-    const users = await prisma.user.findMany({
-      where: {
-        AND: [
-          {
-            OR: [
-              { name: { contains: query, mode: 'insensitive' } },
-              { email: { contains: query, mode: 'insensitive' } },
-              { username: { contains: query, mode: 'insensitive' } },
-            ],
-          },
-          ...(userId ? [{ id: { not: userId } }] : []), // Exclude current user
-        ],
-      },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        username: true,
-        role: true,
-        createdAt: true,
-        _count: {
-          select: {
-            followers: true,
-            following: true,
+    let users: any[] = [];
+    try {
+      users = await prisma.user.findMany({
+        where: {
+          AND: [
+            {
+              OR: [
+                { name: { contains: query, mode: 'insensitive' } },
+                { email: { contains: query, mode: 'insensitive' } },
+                { username: { contains: query, mode: 'insensitive' } },
+              ],
+            },
+            ...(userId ? [{ id: { not: userId } }] : []), // Exclude current user
+          ],
+        },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          username: true,
+          role: true,
+          createdAt: true,
+          _count: {
+            select: {
+              followers: true,
+              following: true,
+            },
           },
         },
-      },
-      take: 20,
-      orderBy: { name: 'asc' },
-    });
+        take: 20,
+        orderBy: { name: 'asc' },
+      });
+    } catch (error: any) {
+      // If _count fails, try without it
+      console.warn('Error searching users with _count:', error?.message);
+      const usersWithoutCount = await prisma.user.findMany({
+        where: {
+          AND: [
+            {
+              OR: [
+                { name: { contains: query, mode: 'insensitive' } },
+                { email: { contains: query, mode: 'insensitive' } },
+                { username: { contains: query, mode: 'insensitive' } },
+              ],
+            },
+            ...(userId ? [{ id: { not: userId } }] : []),
+          ],
+        },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          username: true,
+          role: true,
+          createdAt: true,
+        },
+        take: 20,
+        orderBy: { name: 'asc' },
+      });
+      users = usersWithoutCount.map(u => ({
+        ...u,
+        _count: { followers: 0, following: 0 },
+      }));
+    }
 
     // If userId provided, check if current user follows each user
     if (userId) {

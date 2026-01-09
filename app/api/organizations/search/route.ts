@@ -28,17 +28,30 @@ export async function GET(request: NextRequest) {
         }
 
         // Get all organizations, prioritize those not yet followed
-        const allOrgs = await prisma.organization.findMany({
-          include: {
-            _count: {
-              select: {
-                followers: true,
-                groups: true,
+        let allOrgs: any[] = [];
+        try {
+          allOrgs = await prisma.organization.findMany({
+            include: {
+              _count: {
+                select: {
+                  followers: true,
+                  groups: true,
+                },
               },
             },
-          },
-          take: 50,
-        });
+            take: 50,
+          });
+        } catch (error: any) {
+          // If _count fails, try without it
+          console.warn('Error fetching organizations with _count:', error?.message);
+          const orgsWithoutCount = await prisma.organization.findMany({
+            take: 50,
+          });
+          allOrgs = orgsWithoutCount.map(org => ({
+            ...org,
+            _count: { followers: 0, groups: 0 },
+          }));
+        }
 
         // Filter to organizations not yet followed, prioritize by follower count
         const notFollowedOrgs = allOrgs
@@ -66,41 +79,73 @@ export async function GET(request: NextRequest) {
         }
       } else {
         // No userId, just return most popular organizations
-        suggestedOrganizations = await prisma.organization.findMany({
-          include: {
-            _count: {
-              select: {
-                followers: true,
-                groups: true,
+        try {
+          suggestedOrganizations = await prisma.organization.findMany({
+            include: {
+              _count: {
+                select: {
+                  followers: true,
+                  groups: true,
+                },
               },
             },
-          },
-          take: 10,
-          orderBy: {
-            createdAt: 'desc',
-          },
-        });
+            take: 10,
+            orderBy: {
+              createdAt: 'desc',
+            },
+          });
+        } catch (error: any) {
+          // If _count fails, try without it
+          console.warn('Error fetching organizations with _count:', error?.message);
+          const orgsWithoutCount = await prisma.organization.findMany({
+            take: 10,
+            orderBy: {
+              createdAt: 'desc',
+            },
+          });
+          suggestedOrganizations = orgsWithoutCount.map(org => ({
+            ...org,
+            _count: { followers: 0, groups: 0 },
+          }));
+        }
       }
 
       return NextResponse.json(suggestedOrganizations);
     }
 
     // Search organizations by name
-    const organizations = await prisma.organization.findMany({
-      where: {
-        name: { contains: query, mode: 'insensitive' },
-      },
-      include: {
-        _count: {
-          select: {
-            followers: true,
-            groups: true,
+    let organizations: any[] = [];
+    try {
+      organizations = await prisma.organization.findMany({
+        where: {
+          name: { contains: query, mode: 'insensitive' },
+        },
+        include: {
+          _count: {
+            select: {
+              followers: true,
+              groups: true,
+            },
           },
         },
-      },
-      take: 20,
-      orderBy: { name: 'asc' },
-    });
+        take: 20,
+        orderBy: { name: 'asc' },
+      });
+    } catch (error: any) {
+      // If _count fails, try without it
+      console.warn('Error searching organizations with _count:', error?.message);
+      const orgsWithoutCount = await prisma.organization.findMany({
+        where: {
+          name: { contains: query, mode: 'insensitive' },
+        },
+        take: 20,
+        orderBy: { name: 'asc' },
+      });
+      organizations = orgsWithoutCount.map(org => ({
+        ...org,
+        _count: { followers: 0, groups: 0 },
+      }));
+    }
 
     // If userId provided, check if current user follows each organization
     if (userId) {
