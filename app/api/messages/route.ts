@@ -13,8 +13,9 @@ export async function GET(request: NextRequest) {
       return NextResponse.json([]);
     }
 
-    // Verify user is a member of the group
+    // Verify user is present in the room (joined and currently active)
     if (userId) {
+      // Check membership first
       const membership = await prisma.groupMembership.findUnique({
         where: {
           userId_groupId: {
@@ -30,6 +31,36 @@ export async function GET(request: NextRequest) {
           { status: 403 }
         );
       }
+
+      // Check if user is present (joined the room)
+      const presence = await prisma.roomPresence.findUnique({
+        where: {
+          userId_groupId: {
+            userId,
+            groupId,
+          },
+        },
+      });
+
+      if (!presence) {
+        return NextResponse.json(
+          { error: 'You must join the room to see messages' },
+          { status: 403 }
+        );
+      }
+
+      // Update lastSeen to show user is active (heartbeat)
+      await prisma.roomPresence.update({
+        where: {
+          userId_groupId: {
+            userId,
+            groupId,
+          },
+        },
+        data: {
+          lastSeen: new Date(),
+        },
+      });
     }
 
     // Check if chatroom is active for this group
@@ -100,7 +131,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verify user is a member of the group
+    // Verify user is a member and present in the room
     const membership = await prisma.groupMembership.findUnique({
       where: {
         userId_groupId: {
@@ -113,6 +144,23 @@ export async function POST(request: NextRequest) {
     if (!membership) {
       return NextResponse.json(
         { error: 'You are not a member of this group' },
+        { status: 403 }
+      );
+    }
+
+    // Verify user is present (joined the room)
+    const presence = await prisma.roomPresence.findUnique({
+      where: {
+        userId_groupId: {
+          userId,
+          groupId,
+        },
+      },
+    });
+
+    if (!presence) {
+      return NextResponse.json(
+        { error: 'You must join the room to send messages' },
         { status: 403 }
       );
     }

@@ -30,6 +30,7 @@ model User {
   ownedGroups    Group[]           @relation("GroupOwner")
   ownedOrganizations Organization[] @relation("OrganizationOwner")
   followingOrgs  OrganizationFollow[]
+  roomPresences  RoomPresence[]
 }
 
 model UserFollow {
@@ -179,6 +180,7 @@ model Group {
   members       GroupMembership[]
   messages      ChatMessage[]
   chatroomSettings ChatroomSettings?
+  presences     RoomPresence[]
 }
 
 model GroupMembership {
@@ -200,7 +202,24 @@ model ChatroomSettings {
   id        String   @id @default(cuid())
   groupId   String   @unique // One settings per group
   isActive  Boolean  @default(true)
+  requiresPassword Boolean @default(false)
+  password  String?  // Hashed password if room requires it
   updatedAt DateTime @updatedAt
 
   group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+}
+
+model RoomPresence {
+  id        String   @id @default(cuid())
+  userId    String
+  groupId   String   // The room (group) the user is currently in
+  joinedAt  DateTime @default(now())
+  lastSeen  DateTime @default(now()) // Track last activity to detect inactive users
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, groupId])
+  @@index([groupId])
+  @@index([userId])
 }

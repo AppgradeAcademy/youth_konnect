@@ -62,8 +62,33 @@ export async function POST(
     return NextResponse.json(follow, { status: 201 });
   } catch (error: any) {
     console.error('Error following user:', error);
+    console.error('Error details:', {
+      message: error?.message,
+      code: error?.code,
+      meta: error?.meta,
+    });
+    
+    // Handle duplicate unique constraint error
+    if (error.code === 'P2002') {
+      return NextResponse.json(
+        { error: 'Already following this user' },
+        { status: 409 }
+      );
+    }
+    
+    // Handle foreign key constraint error (user doesn't exist)
+    if (error.code === 'P2003') {
+      return NextResponse.json(
+        { error: 'User not found' },
+        { status: 404 }
+      );
+    }
+    
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { 
+        error: 'Internal server error',
+        message: process.env.NODE_ENV === 'development' ? error?.message : undefined,
+      },
       { status: 500 }
     );
   }
@@ -97,7 +122,10 @@ export async function DELETE(
   } catch (error: any) {
     console.error('Error unfollowing user:', error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { 
+        error: 'Internal server error',
+        message: process.env.NODE_ENV === 'development' ? error?.message : undefined,
+      },
       { status: 500 }
     );
   }
@@ -129,7 +157,12 @@ export async function GET(
     return NextResponse.json({ isFollowing: !!follow });
   } catch (error: any) {
     console.error('Error checking follow status:', error);
-    return NextResponse.json({ isFollowing: false });
+    return NextResponse.json(
+      { 
+        isFollowing: false,
+        error: process.env.NODE_ENV === 'development' ? error?.message : undefined,
+      }
+    );
   }
 }
 
