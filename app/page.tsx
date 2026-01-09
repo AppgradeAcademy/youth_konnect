@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { FaHeart, FaComment, FaPaperPlane, FaBookmark, FaEllipsisH, FaUserCircle, FaPaperPlane as FaSend, FaEdit, FaTrash, FaTimes } from "react-icons/fa";
+import { FaHeart, FaComment, FaPaperPlane, FaBookmark, FaEllipsisH, FaUserCircle, FaPaperPlane as FaSend, FaEdit, FaTrash, FaTimes, FaUsers, FaBuilding, FaUserPlus, FaUserCheck, FaPlus } from "react-icons/fa";
 import { useToast } from "@/contexts/ToastContext";
 import { useNotifications } from "@/contexts/NotificationContext";
 
@@ -53,6 +53,8 @@ export default function Home() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
   const [deletingPost, setDeletingPost] = useState<string | null>(null);
   const [feedFilter, setFeedFilter] = useState<'forYou' | 'following'>('forYou');
+  const [suggestions, setSuggestions] = useState<{ users: any[]; groups: any[] } | null>(null);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
 
   useEffect(() => {
     const userData = localStorage.getItem("user");
@@ -65,6 +67,32 @@ export default function Home() {
     // Fetch posts when user or filter changes
     fetchPosts();
   }, [feedFilter, user]);
+
+  // Fetch suggestions when Following tab is active and posts are empty
+  useEffect(() => {
+    if (feedFilter === 'following' && user && !loading && posts.length === 0) {
+      fetchSuggestions();
+    } else {
+      setSuggestions(null);
+    }
+  }, [feedFilter, user, loading, posts.length]);
+
+  const fetchSuggestions = async () => {
+    if (!user) return;
+    
+    setLoadingSuggestions(true);
+    try {
+      const response = await fetch(`/api/suggestions?userId=${user.id}`);
+      if (response.ok) {
+        const data = await response.json();
+        setSuggestions(data);
+      }
+    } catch (error) {
+      console.error('Error fetching suggestions:', error);
+    } finally {
+      setLoadingSuggestions(false);
+    }
+  };
 
   const fetchPosts = async () => {
     setLoading(true);
@@ -258,6 +286,37 @@ export default function Home() {
     }
   };
 
+  const handleFollowUser = async (userId: string) => {
+    if (!user) return;
+
+    try {
+      const response = await fetch(`/api/users/${userId}/follow`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ followerId: user.id }),
+      });
+
+      if (response.ok) {
+        showToast("Now following user!", "success");
+        // Remove from suggestions
+        if (suggestions) {
+          setSuggestions({
+            ...suggestions,
+            users: suggestions.users.filter(u => u.id !== userId),
+          });
+        }
+        // Refresh posts to see their content
+        fetchPosts();
+      } else {
+        const error = await response.json();
+        showToast(error.error || "Failed to follow user", "error");
+      }
+    } catch (error) {
+      console.error("Error following user:", error);
+      showToast("Failed to follow user", "error");
+    }
+  };
+
   if (loading) {
     return (
       <div className="max-w-2xl mx-auto px-4 py-8 text-center">
@@ -317,21 +376,112 @@ export default function Home() {
         </>
       )}
       {!loading && posts.length === 0 ? (
-        <div className="instagram-card p-8 text-center">
-          <p className="text-gray-500 mb-4">
-            {user 
-              ? (feedFilter === 'forYou' 
-                  ? "No posts yet. Be the first to share something or join groups to see posts from members!"
-                  : "No posts from users you follow yet. Follow more users to see their posts!")
-              : "No posts yet. Be the first to share something!"}
-          </p>
-          {user && (
-            <button
-              onClick={() => router.push("/create")}
-              className="inline-block bg-[#DC143C] text-white px-6 py-3 rounded-lg font-semibold hover:bg-[#B8122E] transition-colors"
-            >
-              Create First Post
-            </button>
+        <div>
+          {feedFilter === 'following' && suggestions && (suggestions.users.length > 0 || suggestions.groups.length > 0) ? (
+            /* Show Suggestions */
+            <div className="space-y-6">
+              <div className="instagram-card p-6">
+                <h2 className="text-xl font-bold text-gray-900 mb-2">Discover More</h2>
+                <p className="text-gray-600 text-sm mb-4">
+                  Follow these users and join groups to see their posts in your Following feed!
+                </p>
+              </div>
+
+              {/* User Suggestions */}
+              {suggestions.users.length > 0 && (
+                <div className="instagram-card p-6">
+                  <div className="flex items-center gap-2 mb-4">
+                    <FaUsers className="text-[#DC143C]" />
+                    <h3 className="text-lg font-semibold text-gray-900">People You May Know</h3>
+                  </div>
+                  <div className="space-y-3">
+                    {suggestions.users.map((suggestedUser: any) => (
+                      <div key={suggestedUser.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#DC143C] to-[#B8122E] flex items-center justify-center text-white font-semibold">
+                            {(suggestedUser.name[0] || "U").toUpperCase()}
+                          </div>
+                          <div>
+                            <p className="font-semibold text-gray-900">{suggestedUser.name}</p>
+                            {suggestedUser.username && (
+                              <p className="text-sm text-gray-500">@{suggestedUser.username}</p>
+                            )}
+                            {suggestedUser.mutualGroups > 0 && (
+                              <p className="text-xs text-gray-400">
+                                {suggestedUser.mutualGroups} mutual group{suggestedUser.mutualGroups > 1 ? 's' : ''}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => handleFollowUser(suggestedUser.id)}
+                          className="px-4 py-2 bg-[#DC143C] text-white rounded-lg font-semibold hover:bg-[#B8122E] transition-colors flex items-center gap-2"
+                        >
+                          <FaUserPlus /> Follow
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Group Suggestions */}
+              {suggestions.groups.length > 0 && (
+                <div className="instagram-card p-6">
+                  <div className="flex items-center gap-2 mb-4">
+                    <FaBuilding className="text-[#DC143C]" />
+                    <h3 className="text-lg font-semibold text-gray-900">Groups to Join</h3>
+                  </div>
+                  <div className="space-y-3">
+                    {suggestions.groups.map((group: any) => (
+                      <div key={group.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white">
+                            <FaBuilding />
+                          </div>
+                          <div>
+                            <p className="font-semibold text-gray-900">{group.name}</p>
+                            {group.organization && (
+                              <p className="text-sm text-gray-500">{group.organization.name}</p>
+                            )}
+                            {group.memberCount !== undefined && (
+                              <p className="text-xs text-gray-400">{group.memberCount} members</p>
+                            )}
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => router.push('/search')}
+                          className="px-4 py-2 bg-[#DC143C] text-white rounded-lg font-semibold hover:bg-[#B8122E] transition-colors flex items-center gap-2"
+                        >
+                          <FaPlus /> View
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            /* Default Empty State */
+            <div className="instagram-card p-8 text-center">
+              <p className="text-gray-500 mb-4">
+                {user 
+                  ? (feedFilter === 'forYou' 
+                      ? "No posts yet. Be the first to share something or join groups to see posts from members!"
+                      : loadingSuggestions 
+                        ? "Loading suggestions..."
+                        : "No posts from users you follow yet. Follow more users to see their posts!")
+                  : "No posts yet. Be the first to share something!"}
+              </p>
+              {user && (
+                <button
+                  onClick={() => router.push("/create")}
+                  className="inline-block bg-[#DC143C] text-white px-6 py-3 rounded-lg font-semibold hover:bg-[#B8122E] transition-colors"
+                >
+                  Create First Post
+                </button>
+              )}
+            </div>
           )}
         </div>
       ) : !loading && posts.length > 0 ? (
