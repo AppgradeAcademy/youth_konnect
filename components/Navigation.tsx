@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, useRef } from "react";
-import { FaHome, FaComments, FaBell, FaUser, FaPlusCircle, FaSignOutAlt } from "react-icons/fa";
+import { FaHome, FaComments, FaBell, FaUser, FaPlusCircle, FaSignOutAlt, FaBars, FaTimes } from "react-icons/fa";
 import { FaChurch } from "react-icons/fa";
 import Logo from "./Logo";
 import { useNotifications } from "@/contexts/NotificationContext";
@@ -13,6 +13,7 @@ export default function Navigation() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [notificationPanelOpen, setNotificationPanelOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const notificationRef = useRef<HTMLDivElement>(null);
   const { notifications, unreadCount, markAsRead, markAllAsRead, fetchNotifications } = useNotifications();
 
@@ -52,6 +53,7 @@ export default function Navigation() {
   const handleLogout = () => {
     localStorage.removeItem("user");
     setUser(null);
+    setMobileMenuOpen(false);
     router.push("/");
     router.refresh();
   };
@@ -216,6 +218,98 @@ export default function Navigation() {
               </div>
             )}
 
+            {/* Mobile Menu Button */}
+            {user && (
+              <div className="md:hidden flex items-center gap-2">
+                {/* Notifications on Mobile */}
+                <div className="relative" ref={notificationRef}>
+                  <button
+                    onClick={() => setNotificationPanelOpen(!notificationPanelOpen)}
+                    className="p-2 text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors relative"
+                    aria-label="Notifications"
+                  >
+                    <FaBell className="text-xl" />
+                    {unreadCount > 0 && (
+                      <span className="absolute top-1 right-1 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                        {unreadCount > 9 ? "9+" : unreadCount}
+                      </span>
+                    )}
+                  </button>
+                  
+                  {/* Notification Panel */}
+                  {notificationPanelOpen && (
+                    <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-50 max-h-96 overflow-hidden flex flex-col">
+                      <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+                        <h3 className="font-semibold text-gray-800">Notifications</h3>
+                        {unreadCount > 0 && (
+                          <button
+                            onClick={markAllAsRead}
+                            className="text-sm text-blue-600 hover:text-blue-800"
+                          >
+                            Mark all as read
+                          </button>
+                        )}
+                      </div>
+                      <div className="overflow-y-auto flex-1">
+                        {notifications.length === 0 ? (
+                          <div className="p-8 text-center text-gray-500">
+                            <FaBell className="text-3xl mx-auto mb-2 opacity-50" />
+                            <p>No notifications yet</p>
+                          </div>
+                        ) : (
+                          <div className="divide-y divide-gray-100">
+                            {notifications.slice(0, 20).map((notification) => (
+                              <Link
+                                key={notification.id}
+                                href={notification.link || "#"}
+                                onClick={() => {
+                                  markAsRead(notification.id);
+                                  setNotificationPanelOpen(false);
+                                }}
+                                className={`block p-4 hover:bg-gray-50 transition-colors ${
+                                  !notification.read ? "bg-blue-50" : ""
+                                }`}
+                              >
+                                <div className="flex items-start gap-3">
+                                  <div className="flex-1 min-w-0">
+                                    <p className={`text-sm font-medium ${!notification.read ? "text-gray-900" : "text-gray-700"}`}>
+                                      {notification.title}
+                                    </p>
+                                    <p className="text-xs text-gray-500 mt-1">
+                                      {notification.message}
+                                    </p>
+                                    <p className="text-xs text-gray-400 mt-1">
+                                      {new Date(notification.createdAt).toLocaleDateString()} at{" "}
+                                      {new Date(notification.createdAt).toLocaleTimeString([], {
+                                        hour: "2-digit",
+                                        minute: "2-digit",
+                                      })}
+                                    </p>
+                                  </div>
+                                  {!notification.read && (
+                                    <div className="w-2 h-2 bg-blue-500 rounded-full mt-1 flex-shrink-0"></div>
+                                  )}
+                                </div>
+                              </Link>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Mobile Menu Toggle */}
+                <button
+                  onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                  className="p-2 text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors"
+                  aria-label="Toggle menu"
+                >
+                  {mobileMenuOpen ? <FaTimes className="text-xl" /> : <FaBars className="text-xl" />}
+                </button>
+              </div>
+            )}
+
             {/* Mobile Navigation - Show Login if not logged in */}
             {!user && (
               <Link
@@ -226,6 +320,75 @@ export default function Navigation() {
               </Link>
             )}
           </div>
+
+          {/* Mobile Menu Dropdown */}
+          {mobileMenuOpen && user && (
+            <div className="md:hidden border-t border-gray-200 py-4">
+              <div className="flex flex-col space-y-2">
+                <Link
+                  href="/"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                    isActive("/") 
+                      ? "text-[#DC143C] bg-red-50" 
+                      : "text-gray-700 hover:text-gray-900 hover:bg-gray-50"
+                  }`}
+                >
+                  <FaHome className="text-xl" />
+                  <span>Home</span>
+                </Link>
+
+                <Link
+                  href="/churches"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                    isActive("/churches") 
+                      ? "text-[#DC143C] bg-red-50" 
+                      : "text-gray-700 hover:text-gray-900 hover:bg-gray-50"
+                  }`}
+                >
+                  <FaChurch className="text-xl" />
+                  <span>My Church</span>
+                </Link>
+
+                <Link
+                  href="/chatroom"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                    isActive("/chatroom") 
+                      ? "text-[#DC143C] bg-red-50" 
+                      : "text-gray-700 hover:text-gray-900 hover:bg-gray-50"
+                  }`}
+                >
+                  <FaComments className="text-xl" />
+                  <span>Messages</span>
+                </Link>
+
+                <Link
+                  href={user ? `/user/${user.id}` : "/login"}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                    pathname.startsWith("/user/") && pathname === `/user/${user.id}`
+                      ? "text-[#DC143C] bg-red-50" 
+                      : "text-gray-700 hover:text-gray-900 hover:bg-gray-50"
+                  }`}
+                >
+                  <FaUser className="text-xl" />
+                  <span>Profile</span>
+                </Link>
+
+                <div className="border-t border-gray-200 pt-2">
+                  <button
+                    onClick={handleLogout}
+                    className="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-gray-700 hover:text-red-600 hover:bg-red-50"
+                  >
+                    <FaSignOutAlt className="text-xl" />
+                    <span>Logout</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </nav>
 
