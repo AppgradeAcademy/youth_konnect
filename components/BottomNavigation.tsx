@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { FaHome, FaChurch, FaComments, FaBell, FaUser } from "react-icons/fa";
+import { FaHome, FaChurch, FaComments, FaBell, FaUser, FaSignOutAlt } from "react-icons/fa";
 import { useNotifications } from "@/contexts/NotificationContext";
 import { useEffect, useState } from "react";
 
@@ -87,6 +87,14 @@ export default function BottomNavigation() {
             <FaUser className="text-2xl" />
             <span className="text-xs mt-1">Profile</span>
           </Link>
+
+          <button
+            onClick={handleLogout}
+            className="flex flex-col items-center justify-center flex-1 h-full text-gray-600"
+          >
+            <FaSignOutAlt className="text-2xl" />
+            <span className="text-xs mt-1">Logout</span>
+          </button>
         </div>
       </div>
     </nav>

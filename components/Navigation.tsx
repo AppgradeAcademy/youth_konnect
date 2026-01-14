@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, useRef } from "react";
-import { FaHome, FaComments, FaBell, FaUser, FaPlusCircle } from "react-icons/fa";
+import { FaHome, FaComments, FaBell, FaUser, FaPlusCircle, FaSignOutAlt } from "react-icons/fa";
 import { FaChurch } from "react-icons/fa";
 import Logo from "./Logo";
 import { useNotifications } from "@/contexts/NotificationContext";
@@ -204,6 +204,15 @@ export default function Navigation() {
                 >
                   <FaUser className="text-xl" />
                 </Link>
+
+                {/* Logout */}
+                <button
+                  onClick={handleLogout}
+                  className="p-3 rounded-lg transition-colors text-gray-700 hover:text-gray-900 hover:bg-gray-50"
+                  title="Logout"
+                >
+                  <FaSignOutAlt className="text-xl" />
+                </button>
               </div>
             )}
 
