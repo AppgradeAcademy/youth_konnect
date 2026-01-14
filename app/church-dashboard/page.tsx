@@ -105,7 +105,7 @@ export default function ChurchDashboard() {
       return;
     }
     
-    fetchOrganization();
+    fetchOrganization(userObj.id);
   }, [router]);
 
   useEffect(() => {
@@ -117,9 +117,9 @@ export default function ChurchDashboard() {
     }
   }, [organization, activeTab]);
 
-  const fetchOrganization = async () => {
+  const fetchOrganization = async (userId: string) => {
     try {
-      const response = await fetch(`/api/organizations/my-organization?userId=${user?.id}`);
+      const response = await fetch(`/api/organizations/my-organization?userId=${userId}`);
       if (response.ok) {
         const data = await response.json();
         setOrganization(data);

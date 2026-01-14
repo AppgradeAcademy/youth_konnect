@@ -65,15 +65,11 @@ export default function BottomNavigation() {
             <span className="text-xs mt-1">Messages</span>
           </Link>
 
-          <Link
-            href="/notifications"
+          <div
             className={`flex flex-col items-center justify-center flex-1 h-full relative ${
-              pathname === "/notifications" ? "text-[#DC143C]" : "text-gray-600"
+              pathname === "/" ? "text-[#DC143C]" : "text-gray-600"
             }`}
-            onClick={(e) => {
-              e.preventDefault();
-              // You can add notification panel toggle here if needed
-            }}
+            title="Notifications available in top menu"
           >
             <div className="relative">
               <FaBell className="text-2xl" />
@@ -84,7 +80,7 @@ export default function BottomNavigation() {
               )}
             </div>
             <span className="text-xs mt-1">Notify</span>
-          </Link>
+          </div>
 
           <Link
             href={user ? `/user/${user.id}` : "/login"}
