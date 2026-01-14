@@ -117,13 +117,27 @@ export async function GET(request: NextRequest) {
     console.error('Error details:', error?.message, error?.stack);
     console.error('Error code:', error?.code);
     console.error('Error meta:', error?.meta);
+    console.error('Error name:', error?.name);
+    
+    // Check for specific Prisma errors
+    if (error?.code === 'P1001' || error?.message?.includes('Can\'t reach database')) {
+      return NextResponse.json(
+        { 
+          error: 'Database connection error',
+          message: 'Unable to connect to the database. Please try again later.',
+          code: 'DATABASE_CONNECTION_ERROR'
+        },
+        { status: 503 }
+      );
+    }
+    
     return NextResponse.json(
       { 
         error: 'Internal server error',
-        message: error?.message || 'Unknown error',
+        message: process.env.NODE_ENV === 'development' ? error?.message : 'An error occurred while fetching questions',
         code: error?.code || 'UNKNOWN',
         // Include error details to help debug production issues
-        details: error?.meta || (error?.stack ? error.stack.substring(0, 200) : undefined)
+        details: process.env.NODE_ENV === 'development' ? (error?.meta || (error?.stack ? error.stack.substring(0, 500) : undefined)) : undefined
       },
       { status: 500 }
     );

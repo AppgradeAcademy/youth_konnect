@@ -52,6 +52,7 @@ export async function POST(request: NextRequest) {
     console.error('Login error:', error);
     console.error('Error details:', error?.message, error?.stack);
     console.error('Error code:', error?.code);
+    console.error('Error name:', error?.name);
     
     // Handle JSON parsing errors
     if (error instanceof SyntaxError || error?.message?.includes('JSON')) {
@@ -61,11 +62,24 @@ export async function POST(request: NextRequest) {
       );
     }
     
+    // Check for specific Prisma errors
+    if (error?.code === 'P1001' || error?.message?.includes('Can\'t reach database')) {
+      return NextResponse.json(
+        { 
+          error: 'Database connection error',
+          message: 'Unable to connect to the database. Please try again later.',
+          code: 'DATABASE_CONNECTION_ERROR'
+        },
+        { status: 503 }
+      );
+    }
+    
     return NextResponse.json(
       { 
         error: 'Internal server error',
-        message: process.env.NODE_ENV === 'development' ? error?.message : undefined,
-        code: error?.code || 'UNKNOWN'
+        message: process.env.NODE_ENV === 'development' ? error?.message : 'An error occurred during login. Please try again.',
+        code: error?.code || 'UNKNOWN',
+        details: process.env.NODE_ENV === 'development' ? (error?.stack ? error.stack.substring(0, 500) : undefined) : undefined
       },
       { status: 500 }
     );
