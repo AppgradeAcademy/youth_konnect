@@ -1,13 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { FaHome, FaChurch, FaComments, FaBell, FaUser, FaSignOutAlt } from "react-icons/fa";
 import { useNotifications } from "@/contexts/NotificationContext";
 import { useEffect, useState } from "react";
 
 export default function BottomNavigation() {
   const pathname = usePathname();
+  const router = useRouter();
   const { unreadCount } = useNotifications();
   const [user, setUser] = useState<any>(null);
   const isActive = (path: string) => pathname === path;
@@ -18,6 +19,13 @@ export default function BottomNavigation() {
       setUser(JSON.parse(userData));
     }
   }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem("user");
+    setUser(null);
+    router.push("/");
+    router.refresh();
+  };
 
   if (!user) return null;
 
