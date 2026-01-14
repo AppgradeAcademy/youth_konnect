@@ -58,22 +58,27 @@ export default function Churches() {
   };
 
   const fetchFollowingStatus = async () => {
-    if (!user) return;
+    if (!user?.id || organizations.length === 0) return;
     try {
       const followStatuses: Record<string, boolean> = {};
-      await Promise.all(
-        organizations.map(async (org) => {
-          try {
-            const response = await fetch(`/api/organizations/${org.id}/follow?userId=${user.id}`);
-            if (response.ok) {
-              const data = await response.json();
-              followStatuses[org.id] = data.isFollowing;
+      // Batch requests to avoid overwhelming the server - process 5 at a time
+      const batchSize = 5;
+      for (let i = 0; i < organizations.length; i += batchSize) {
+        const batch = organizations.slice(i, i + batchSize);
+        await Promise.all(
+          batch.map(async (org) => {
+            try {
+              const response = await fetch(`/api/organizations/${org.id}/follow?userId=${user.id}`);
+              if (response.ok) {
+                const data = await response.json();
+                followStatuses[org.id] = data.isFollowing;
+              }
+            } catch (error) {
+              console.error(`Error checking follow status for ${org.id}:`, error);
             }
-          } catch (error) {
-            console.error(`Error checking follow status for ${org.id}:`, error);
-          }
-        })
-      );
+          })
+        );
+      }
       setFollowingMap(followStatuses);
     } catch (error) {
       console.error("Error fetching follow status:", error);
