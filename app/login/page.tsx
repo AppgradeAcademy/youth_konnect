@@ -32,7 +32,16 @@ export default function Login() {
       }
 
       localStorage.setItem("user", JSON.stringify(data.user));
-      router.push("/");
+      
+      // Redirect based on role
+      if (data.user.role === "admin") {
+        // Check if user owns an organization
+        router.push("/church-dashboard");
+      } else if (data.user.role === "leader") {
+        router.push("/leader-dashboard");
+      } else {
+        router.push("/");
+      }
       router.refresh();
     } catch (err) {
       setError("An error occurred. Please try again.");

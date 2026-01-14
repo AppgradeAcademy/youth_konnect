@@ -1,18 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
-// GET all events (optionally filtered by organization)
+// GET all announcements (optionally filtered by organization)
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
     const organizationId = searchParams.get('organizationId');
 
-    const whereClause: any = {};
+    const whereClause: any = { isActive: true };
     if (organizationId) {
       whereClause.organizationId = organizationId;
     }
 
-    const events = await prisma.event.findMany({
+    const announcements = await prisma.announcement.findMany({
       where: whereClause,
       include: {
         organization: {
@@ -29,12 +29,12 @@ export async function GET(request: NextRequest) {
           },
         },
       },
-      orderBy: { date: 'asc' },
+      orderBy: { createdAt: 'desc' },
     });
 
-    return NextResponse.json(events);
+    return NextResponse.json(announcements);
   } catch (error: any) {
-    console.error('Error fetching events:', error);
+    console.error('Error fetching announcements:', error);
     return NextResponse.json(
       { 
         error: 'Internal server error',
@@ -45,14 +45,14 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST create new event (admin/leader only)
+// POST create new announcement (admin/leader only)
 export async function POST(request: NextRequest) {
   try {
-    const { organizationId, title, description, imageUrl, date, location, createdById } = await request.json();
+    const { organizationId, title, content, imageUrl, createdById } = await request.json();
 
-    if (!organizationId || !title || !date || !createdById) {
+    if (!organizationId || !title || !content || !createdById) {
       return NextResponse.json(
-        { error: 'Organization ID, title, date, and creator ID are required' },
+        { error: 'Organization ID, title, content, and creator ID are required' },
         { status: 400 }
       );
     }
@@ -75,19 +75,17 @@ export async function POST(request: NextRequest) {
 
     if (!isOwner && !isLeader) {
       return NextResponse.json(
-        { error: 'Only organization owners or leaders can create events' },
+        { error: 'Only organization owners or leaders can create announcements' },
         { status: 403 }
       );
     }
 
-    const event = await prisma.event.create({
+    const announcement = await prisma.announcement.create({
       data: {
         organizationId,
         title,
-        description: description || null,
+        content,
         imageUrl: imageUrl || null,
-        date: new Date(date),
-        location: location || null,
         createdById,
       },
       include: {
@@ -107,9 +105,9 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    return NextResponse.json(event, { status: 201 });
+    return NextResponse.json(announcement, { status: 201 });
   } catch (error: any) {
-    console.error('Error creating event:', error);
+    console.error('Error creating announcement:', error);
     return NextResponse.json(
       { 
         error: 'Internal server error',
@@ -119,3 +117,4 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+

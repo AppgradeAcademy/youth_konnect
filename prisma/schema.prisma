@@ -35,6 +35,8 @@ model User {
   createdPrograms ChurchProgram[]
   createdSchedules Schedule[]
   scheduleTags   ScheduleTag[]
+  createdEvents Event[]
+  createdAnnouncements Announcement[]
 }
 
 model UserFollow {
@@ -136,13 +138,41 @@ model Answer {
 }
 
 model Event {
-  id        String   @id @default(cuid())
-  name      String
-  date      DateTime
-  time      String // Time in HH:MM format
-  place     String // Place/address
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id             String   @id @default(cuid())
+  organizationId String
+  title          String
+  description    String?
+  imageUrl       String?
+  date           DateTime
+  location       String?
+  createdById    String   // Admin/Leader who created it
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy    User         @relation(fields: [createdById], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([createdById])
+  @@index([date])
+}
+
+model Announcement {
+  id             String   @id @default(cuid())
+  organizationId String
+  title          String
+  content        String
+  imageUrl       String?
+  createdById    String   // Admin/Leader who created it
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy    User         @relation(fields: [createdById], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([createdById])
 }
 
 model Organization {
@@ -160,6 +190,8 @@ model Organization {
   leaders OrganizationLeader[]
   programs ChurchProgram[]
   schedules Schedule[]
+  events Event[]
+  announcements Announcement[]
 }
 
 model OrganizationFollow {
