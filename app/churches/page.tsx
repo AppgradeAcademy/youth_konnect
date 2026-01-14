@@ -37,10 +37,10 @@ export default function Churches() {
   }, []);
 
   useEffect(() => {
-    if (user) {
+    if (user && organizations.length > 0) {
       fetchFollowingStatus();
     }
-  }, [user, organizations]);
+  }, [user?.id, organizations.length]); // Only re-run if user ID changes or organizations count changes
 
   const fetchOrganizations = async () => {
     try {

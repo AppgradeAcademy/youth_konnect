@@ -41,16 +41,26 @@ export default function OrganizationProfile() {
   useEffect(() => {
     const userData = localStorage.getItem("user");
     if (userData) {
-      setCurrentUser(JSON.parse(userData));
+      const userObj = JSON.parse(userData);
+      setCurrentUser(userObj);
     }
+  }, []);
+
+  useEffect(() => {
     if (params.id) {
       fetchOrganizationProfile();
       fetchGroups();
+    }
+  }, [params.id]);
+
+  useEffect(() => {
+    if (currentUser && params.id) {
       checkFollowStatus();
     }
-  }, [params.id, currentUser]);
+  }, [currentUser, params.id]);
 
   const fetchOrganizationProfile = async () => {
+    if (!params.id) return;
     try {
       const response = await fetch(`/api/organizations/${params.id}`);
       if (response.ok) {
@@ -69,6 +79,7 @@ export default function OrganizationProfile() {
   };
 
   const fetchGroups = async () => {
+    if (!params.id) return;
     try {
       const response = await fetch(`/api/organizations/${params.id}/groups`);
       if (response.ok) {
@@ -81,7 +92,7 @@ export default function OrganizationProfile() {
   };
 
   const checkFollowStatus = async () => {
-    if (!currentUser || !params.id) return;
+    if (!currentUser?.id || !params.id) return;
     
     try {
       const response = await fetch(`/api/organizations/${params.id}/follow?userId=${currentUser.id}`);
