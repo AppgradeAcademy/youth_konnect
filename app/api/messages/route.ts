@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic';
+
 // GET all messages for a group (group-based chatroom like MXit)
 export async function GET(request: NextRequest) {
   try {
