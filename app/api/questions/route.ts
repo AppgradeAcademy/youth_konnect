@@ -112,11 +112,15 @@ export async function GET(request: NextRequest) {
   } catch (error: any) {
     console.error('Error fetching questions:', error);
     console.error('Error details:', error?.message, error?.stack);
+    console.error('Error code:', error?.code);
+    console.error('Error meta:', error?.meta);
     return NextResponse.json(
       { 
         error: 'Internal server error',
-        message: process.env.NODE_ENV === 'development' ? error?.message : undefined,
-        details: process.env.NODE_ENV === 'development' ? error?.stack : undefined
+        message: error?.message || 'Unknown error',
+        code: error?.code || 'UNKNOWN',
+        // Include error details to help debug production issues
+        details: error?.meta || (error?.stack ? error.stack.substring(0, 200) : undefined)
       },
       { status: 500 }
     );

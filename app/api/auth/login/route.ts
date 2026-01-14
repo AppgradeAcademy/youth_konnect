@@ -36,10 +36,16 @@ export async function POST(request: NextRequest) {
       { message: 'Login successful', user: userWithoutPassword },
       { status: 200 }
     );
-  } catch (error) {
+  } catch (error: any) {
     console.error('Login error:', error);
+    console.error('Error details:', error?.message, error?.stack);
+    console.error('Error code:', error?.code);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { 
+        error: 'Internal server error',
+        message: error?.message || 'Unknown error',
+        code: error?.code || 'UNKNOWN'
+      },
       { status: 500 }
     );
   }
