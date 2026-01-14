@@ -10,6 +10,9 @@ export async function GET(request: NextRequest) {
           select: {
             followers: true,
             groups: true,
+            categories: true,
+            events: true,
+            announcements: true,
           },
         },
       },
