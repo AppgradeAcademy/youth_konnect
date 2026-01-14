@@ -12,10 +12,18 @@ export async function GET(request: NextRequest) {
       whereClause.organizationId = organizationId;
     }
 
+    const userId = searchParams.get('userId'); // Optional: for filtering by visibility and RSVP status
+    
     const events = await prisma.event.findMany({
       where: whereClause,
       include: {
         organization: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        group: {
           select: {
             id: true,
             name: true,
@@ -28,11 +36,61 @@ export async function GET(request: NextRequest) {
             username: true,
           },
         },
+        _count: {
+          select: {
+            rsvps: true,
+          },
+        },
+        ...(userId ? {
+          rsvps: {
+            where: { userId },
+            select: {
+              id: true,
+              status: true,
+            },
+          },
+        } : {}),
       },
       orderBy: { date: 'asc' },
     });
 
-    return NextResponse.json(events);
+    // Filter events based on visibility if userId is provided
+    let filteredEvents = events;
+    if (userId) {
+      // Wait for async filtering
+      const visibilityChecks = await Promise.all(
+        events.map(async (event) => {
+          if (event.visibility === 'public') return true;
+          if (event.visibility === 'leader-only') {
+            const isLeader = await prisma.organizationLeader.findUnique({
+              where: {
+                userId_organizationId: {
+                  userId,
+                  organizationId: event.organizationId,
+                },
+              },
+            });
+            return !!isLeader;
+          }
+          if (event.visibility === 'group' && event.groupId) {
+            const isMember = await prisma.groupMembership.findUnique({
+              where: {
+                userId_groupId: {
+                  userId,
+                  groupId: event.groupId,
+                },
+              },
+            });
+            return !!isMember;
+          }
+          return false;
+        })
+      );
+
+      filteredEvents = events.filter((_, index) => visibilityChecks[index]);
+    }
+
+    return NextResponse.json(filteredEvents);
   } catch (error: any) {
     console.error('Error fetching events:', error);
     return NextResponse.json(
@@ -48,7 +106,19 @@ export async function GET(request: NextRequest) {
 // POST create new event (admin/leader only)
 export async function POST(request: NextRequest) {
   try {
-    const { organizationId, title, description, imageUrl, date, location, createdById } = await request.json();
+    const { 
+      organizationId, 
+      groupId,
+      title, 
+      description, 
+      imageUrl, 
+      date, 
+      time,
+      location, 
+      eventType,
+      visibility,
+      createdById 
+    } = await request.json();
 
     if (!organizationId || !title || !date || !createdById) {
       return NextResponse.json(
@@ -80,14 +150,44 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Validate event type and visibility
+    const validEventTypes = ['service', 'conference', 'meeting', 'rehearsal'];
+    const validVisibility = ['public', 'group', 'leader-only'];
+    
+    if (eventType && !validEventTypes.includes(eventType)) {
+      return NextResponse.json(
+        { error: `Event type must be one of: ${validEventTypes.join(', ')}` },
+        { status: 400 }
+      );
+    }
+
+    if (visibility && !validVisibility.includes(visibility)) {
+      return NextResponse.json(
+        { error: `Visibility must be one of: ${validVisibility.join(', ')}` },
+        { status: 400 }
+      );
+    }
+
+    // If visibility is 'group', groupId is required
+    if (visibility === 'group' && !groupId) {
+      return NextResponse.json(
+        { error: 'Group ID is required for group-specific events' },
+        { status: 400 }
+      );
+    }
+
     const event = await prisma.event.create({
       data: {
         organizationId,
+        groupId: groupId || null,
         title,
         description: description || null,
         imageUrl: imageUrl || null,
         date: new Date(date),
+        time: time || null,
         location: location || null,
+        eventType: eventType || 'meeting',
+        visibility: visibility || 'public',
         createdById,
       },
       include: {
@@ -97,11 +197,22 @@ export async function POST(request: NextRequest) {
             name: true,
           },
         },
+        group: groupId ? {
+          select: {
+            id: true,
+            name: true,
+          },
+        } : undefined,
         createdBy: {
           select: {
             id: true,
             name: true,
             username: true,
+          },
+        },
+        _count: {
+          select: {
+            rsvps: true,
           },
         },
       },

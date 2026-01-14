@@ -20,23 +20,28 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  votes          Vote[]
-  messages       ChatMessage[]
-  questions      Question[]
-  answers        Answer[]
-  following      UserFollow[]      @relation("UserFollows")
-  followers      UserFollow[]      @relation("UserFollowers")
-  groupMemberships GroupMembership[]
-  ownedGroups    Group[]           @relation("GroupOwner")
-  ownedOrganizations Organization[] @relation("OrganizationOwner")
-  followingOrgs  OrganizationFollow[]
-  roomPresences  RoomPresence[]
-  organizationLeaders OrganizationLeader[]
-  createdPrograms ChurchProgram[]
-  createdSchedules Schedule[]
-  scheduleTags   ScheduleTag[]
-  createdEvents Event[]
+  votes                Vote[]
+  messages             ChatMessage[]
+  questions            Question[]
+  answers              Answer[]
+  following            UserFollow[]         @relation("UserFollows")
+  followers            UserFollow[]         @relation("UserFollowers")
+  groupMemberships     GroupMembership[]
+  ownedGroups          Group[]              @relation("GroupOwner")
+  ownedOrganizations   Organization[]       @relation("OrganizationOwner")
+  followingOrgs        OrganizationFollow[]
+  roomPresences        RoomPresence[]
+  organizationLeaders  OrganizationLeader[]
+  createdPrograms      ChurchProgram[]
+  createdSchedules     Schedule[]
+  scheduleTags         ScheduleTag[]
+  createdEvents        Event[]
   createdAnnouncements Announcement[]
+  eventRSVPs           EventRSVP[]
+  groupDocuments       GroupDocument[]
+  meetingMinutes       MeetingMinute[]
+  tasks                Task[]               @relation("TaskCreator")
+  assignedTasks        Task[]               @relation("TaskAssignee")
 }
 
 model UserFollow {
@@ -59,13 +64,13 @@ model Category {
   description    String?
   imageUrl       String?
   isActive       Boolean  @default(true)
-  organizationId String?  // Optional: link poll to organization
+  organizationId String? // Optional: link poll to organization
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
   organization Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  votes         Vote[]
-  contestants   Contestant[]
+  votes        Vote[]
+  contestants  Contestant[]
 }
 
 model Contestant {
@@ -101,28 +106,34 @@ model ChatMessage {
   id        String   @id @default(cuid())
   content   String
   userId    String
-  groupId   String?  // Group-based chatroom (like MXit) - nullable for migration
+  groupId   String? // Group-based chatroom (like MXit) - nullable for migration
   createdAt DateTime @default(now())
 
   user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   group Group? @relation(fields: [groupId], references: [id], onDelete: Cascade)
-  
+
   @@index([groupId, createdAt])
 }
 
 model Question {
-  id          String   @id @default(cuid())
-  title       String
-  content     String
-  userId      String
-  isAnonymous Boolean  @default(false)
-  tags        String? // Comma-separated tags
-  imageUrl    String? // Image URL for Instagram-style posts
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id           String   @id @default(cuid())
+  title        String
+  content      String
+  userId       String
+  groupId      String? // Optional: for group-only feed posts
+  isAnonymous  Boolean  @default(false)
+  isLeaderOnly Boolean  @default(false) // For leader-only feed
+  tags         String? // Comma-separated tags
+  imageUrl     String? // Image URL for Instagram-style posts
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group   Group?   @relation("GroupFeed", fields: [groupId], references: [id], onDelete: Cascade)
   answers Answer[]
+
+  @@index([groupId])
+  @@index([isLeaderOnly])
 }
 
 model Answer {
@@ -140,21 +151,30 @@ model Answer {
 model Event {
   id             String   @id @default(cuid())
   organizationId String
+  groupId        String? // Optional: for group-specific events
   title          String
   description    String?
   imageUrl       String?
   date           DateTime
+  time           String? // Time string (e.g., "10:00 AM")
   location       String?
-  createdById    String   // Admin/Leader who created it
+  eventType      String   @default("meeting") // "service", "conference", "meeting", "rehearsal"
+  visibility     String   @default("public") // "public", "group", "leader-only"
+  createdById    String // Admin/Leader who created it
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+  reminderSent   Boolean  @default(false)
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  group        Group?       @relation(fields: [groupId], references: [id], onDelete: Cascade)
   createdBy    User         @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  rsvps        EventRSVP[]
 
   @@index([organizationId])
+  @@index([groupId])
   @@index([createdById])
   @@index([date])
+  @@index([visibility])
 }
 
 model Announcement {
@@ -163,7 +183,7 @@ model Announcement {
   title          String
   content        String
   imageUrl       String?
-  createdById    String   // Admin/Leader who created it
+  createdById    String // Admin/Leader who created it
   isActive       Boolean  @default(true)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
@@ -179,19 +199,21 @@ model Organization {
   id          String   @id @default(cuid())
   name        String   @unique
   description String?
-  ownerId     String   // User who created the organization
+  ownerId     String // User who created the organization
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  owner   User                @relation("OrganizationOwner", fields: [ownerId], references: [id], onDelete: Cascade)
-  groups  Group[]
-  followers OrganizationFollow[]
-  categories Category[]
-  leaders OrganizationLeader[]
-  programs ChurchProgram[]
-  schedules Schedule[]
-  events Event[]
-  announcements Announcement[]
+  owner          User                 @relation("OrganizationOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  groups         Group[]
+  followers      OrganizationFollow[]
+  categories     Category[]
+  leaders        OrganizationLeader[]
+  programs       ChurchProgram[]
+  schedules      Schedule[]
+  events         Event[]
+  announcements  Announcement[]
+  meetingMinutes MeetingMinute[]
+  tasks          Task[]
 }
 
 model OrganizationFollow {
@@ -209,28 +231,31 @@ model OrganizationFollow {
 }
 
 model Group {
-  id          String   @id @default(cuid())
-  name        String
-  description String?
-  ownerId     String   // User who created the group (usually org admin)
+  id             String   @id @default(cuid())
+  name           String
+  description    String?
+  ownerId        String // User who created the group (usually org admin)
   organizationId String? // Optional: group can belong to an organization
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
-  owner         User            @relation("GroupOwner", fields: [ownerId], references: [id], onDelete: Cascade)
-  organization  Organization?   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  members       GroupMembership[]
-  messages      ChatMessage[]
+  owner            User              @relation("GroupOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  organization     Organization?     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  members          GroupMembership[]
+  messages         ChatMessage[]
   chatroomSettings ChatroomSettings?
-  presences     RoomPresence[]
+  presences        RoomPresence[]
+  events           Event[]
+  documents        GroupDocument[]
+  feedPosts        Question[]        @relation("GroupFeed")
 }
 
 model GroupMembership {
-  id        String   @id @default(cuid())
-  userId    String
-  groupId   String
-  role      String   @default("member") // "member" or "admin"
-  joinedAt  DateTime @default(now())
+  id       String   @id @default(cuid())
+  userId   String
+  groupId  String
+  role     String   @default("member") // "member" or "admin"
+  joinedAt DateTime @default(now())
 
   user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
   group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
@@ -241,22 +266,22 @@ model GroupMembership {
 }
 
 model ChatroomSettings {
-  id        String   @id @default(cuid())
-  groupId   String   @unique // One settings per group
-  isActive  Boolean  @default(true)
-  requiresPassword Boolean @default(false)
-  password  String?  // Hashed password if room requires it
-  updatedAt DateTime @updatedAt
+  id               String   @id @default(cuid())
+  groupId          String   @unique // One settings per group
+  isActive         Boolean  @default(true)
+  requiresPassword Boolean  @default(false)
+  password         String? // Hashed password if room requires it
+  updatedAt        DateTime @updatedAt
 
   group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
 }
 
 model RoomPresence {
-  id        String   @id @default(cuid())
-  userId    String
-  groupId   String   // The room (group) the user is currently in
-  joinedAt  DateTime @default(now())
-  lastSeen  DateTime @default(now()) // Track last activity to detect inactive users
+  id       String   @id @default(cuid())
+  userId   String
+  groupId  String // The room (group) the user is currently in
+  joinedAt DateTime @default(now())
+  lastSeen DateTime @default(now()) // Track last activity to detect inactive users
 
   user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
   group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
@@ -281,17 +306,17 @@ model OrganizationLeader {
 }
 
 model ChurchProgram {
-  id             String   @id @default(cuid())
+  id             String    @id @default(cuid())
   organizationId String
   title          String
   description    String?
   imageUrl       String?
   date           DateTime?
   location       String?
-  createdById    String   // Leader who created it
-  isActive       Boolean  @default(true)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  createdById    String // Leader who created it
+  isActive       Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   createdBy    User         @relation(fields: [createdById], references: [id], onDelete: Cascade)
@@ -307,12 +332,12 @@ model Schedule {
   description    String?
   date           DateTime
   location       String?
-  createdById    String   // Leader who created it
+  createdById    String // Leader who created it
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  createdBy    User         @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy    User          @relation(fields: [createdById], references: [id], onDelete: Cascade)
   tags         ScheduleTag[]
 
   @@index([organizationId])
@@ -332,4 +357,78 @@ model ScheduleTag {
   @@unique([scheduleId, userId])
   @@index([userId])
   @@index([scheduleId])
+}
+
+model EventRSVP {
+  id        String   @id @default(cuid())
+  eventId   String
+  userId    String
+  status    String   @default("interested") // "going" or "interested"
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, userId])
+  @@index([eventId])
+  @@index([userId])
+}
+
+model GroupDocument {
+  id           String   @id @default(cuid())
+  groupId      String
+  title        String
+  description  String?
+  fileUrl      String // URL to the document file
+  fileType     String? // "pdf", "doc", "image", etc.
+  uploadedById String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  group      Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  uploadedBy User  @relation(fields: [uploadedById], references: [id], onDelete: Cascade)
+
+  @@index([groupId])
+  @@index([uploadedById])
+}
+
+model MeetingMinute {
+  id             String   @id @default(cuid())
+  organizationId String
+  title          String
+  content        String
+  meetingDate    DateTime
+  createdById    String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy    User         @relation(fields: [createdById], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([createdById])
+}
+
+model Task {
+  id             String    @id @default(cuid())
+  organizationId String
+  title          String
+  description    String?
+  assignedToId   String? // User assigned to this task
+  createdById    String
+  status         String    @default("pending") // "pending", "in-progress", "completed", "cancelled"
+  dueDate        DateTime?
+  completedAt    DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  assignedTo   User?        @relation("TaskAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
+  createdBy    User         @relation("TaskCreator", fields: [createdById], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([assignedToId])
+  @@index([createdById])
+  @@index([status])
 }

@@ -8,7 +8,18 @@ export async function PATCH(
 ) {
   try {
     const eventId = params.id;
-    const { title, description, imageUrl, date, location, userId } = await request.json();
+    const { 
+      title, 
+      description, 
+      imageUrl, 
+      date, 
+      time,
+      location, 
+      eventType,
+      visibility,
+      groupId,
+      userId 
+    } = await request.json();
 
     const event = await prisma.event.findUnique({
       where: { id: eventId },
@@ -44,17 +55,56 @@ export async function PATCH(
       );
     }
 
+    // Validate event type and visibility if provided
+    if (eventType) {
+      const validEventTypes = ['service', 'conference', 'meeting', 'rehearsal'];
+      if (!validEventTypes.includes(eventType)) {
+        return NextResponse.json(
+          { error: `Event type must be one of: ${validEventTypes.join(', ')}` },
+          { status: 400 }
+        );
+      }
+    }
+
+    if (visibility) {
+      const validVisibility = ['public', 'group', 'leader-only'];
+      if (!validVisibility.includes(visibility)) {
+        return NextResponse.json(
+          { error: `Visibility must be one of: ${validVisibility.join(', ')}` },
+          { status: 400 }
+        );
+      }
+      // If visibility is 'group', groupId is required
+      if (visibility === 'group' && !groupId) {
+        return NextResponse.json(
+          { error: 'Group ID is required for group-specific events' },
+          { status: 400 }
+        );
+      }
+    }
+
+    const updateData: any = {};
+    if (title) updateData.title = title;
+    if (description !== undefined) updateData.description = description;
+    if (imageUrl !== undefined) updateData.imageUrl = imageUrl;
+    if (date) updateData.date = new Date(date);
+    if (time !== undefined) updateData.time = time;
+    if (location !== undefined) updateData.location = location;
+    if (eventType) updateData.eventType = eventType;
+    if (visibility) updateData.visibility = visibility;
+    if (groupId !== undefined) updateData.groupId = groupId;
+
     const updated = await prisma.event.update({
       where: { id: eventId },
-      data: {
-        ...(title && { title }),
-        ...(description !== undefined && { description }),
-        ...(imageUrl !== undefined && { imageUrl }),
-        ...(date && { date: new Date(date) }),
-        ...(location !== undefined && { location }),
-      },
+      data: updateData,
       include: {
         organization: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        group: {
           select: {
             id: true,
             name: true,
@@ -65,6 +115,11 @@ export async function PATCH(
             id: true,
             name: true,
             username: true,
+          },
+        },
+        _count: {
+          select: {
+            rsvps: true,
           },
         },
       },
