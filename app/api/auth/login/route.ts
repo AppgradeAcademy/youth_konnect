@@ -6,7 +6,8 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, password } = await request.json();
+    const body = await request.json();
+    const { email, password } = body;
 
     if (!email || !password) {
       return NextResponse.json(
@@ -25,11 +26,19 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify password
-    const isValid = await verifyPassword(password, user.password);
-    if (!isValid) {
+    try {
+      const isValid = await verifyPassword(password, user.password);
+      if (!isValid) {
+        return NextResponse.json(
+          { error: 'Invalid email or password' },
+          { status: 401 }
+        );
+      }
+    } catch (verifyError: any) {
+      console.error('Password verification error:', verifyError);
       return NextResponse.json(
-        { error: 'Invalid email or password' },
-        { status: 401 }
+        { error: 'Error verifying password. Please try again.' },
+        { status: 500 }
       );
     }
 
@@ -43,10 +52,19 @@ export async function POST(request: NextRequest) {
     console.error('Login error:', error);
     console.error('Error details:', error?.message, error?.stack);
     console.error('Error code:', error?.code);
+    
+    // Handle JSON parsing errors
+    if (error instanceof SyntaxError || error?.message?.includes('JSON')) {
+      return NextResponse.json(
+        { error: 'Invalid request format' },
+        { status: 400 }
+      );
+    }
+    
     return NextResponse.json(
       { 
         error: 'Internal server error',
-        message: error?.message || 'Unknown error',
+        message: process.env.NODE_ENV === 'development' ? error?.message : undefined,
         code: error?.code || 'UNKNOWN'
       },
       { status: 500 }

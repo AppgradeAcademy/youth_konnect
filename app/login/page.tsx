@@ -27,7 +27,14 @@ export default function Login() {
       const data = await response.json();
 
       if (!response.ok) {
-        setError(data.error || "Login failed");
+        setError(data.error || data.message || "Login failed. Please check your credentials.");
+        setLoading(false);
+        return;
+      }
+
+      if (!data.user) {
+        setError("Invalid response from server. Please try again.");
+        setLoading(false);
         return;
       }
 
@@ -35,7 +42,6 @@ export default function Login() {
       
       // Redirect based on role
       if (data.user.role === "admin") {
-        // Check if user owns an organization
         router.push("/church-dashboard");
       } else if (data.user.role === "leader") {
         router.push("/leader-dashboard");
@@ -43,8 +49,9 @@ export default function Login() {
         router.push("/");
       }
       router.refresh();
-    } catch (err) {
-      setError("An error occurred. Please try again.");
+    } catch (err: any) {
+      console.error("Login error:", err);
+      setError(err?.message || "An error occurred. Please try again.");
     } finally {
       setLoading(false);
     }
